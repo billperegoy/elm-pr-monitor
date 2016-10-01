@@ -179,7 +179,11 @@ pullRequestTable model =
 
 currentTime : Model -> Html Msg
 currentTime model =
-    p [] [ text (toString (fromTime model.currentTime)) ]
+    let
+        timeString =
+            "Current Time: " ++ toString (fromTime model.currentTime)
+    in
+        p [] [ text timeString ]
 
 
 errors : Model -> Html Msg
