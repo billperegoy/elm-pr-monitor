@@ -24,7 +24,7 @@ main =
 type alias Model =
     { currentTime : Float
     , pullRequests : List PullRequestData
-    , errors : String
+    , errors : Maybe String
     }
 
 
@@ -84,7 +84,7 @@ init : ( Model, Cmd Msg )
 init =
     { currentTime = 0.0
     , pullRequests = []
-    , errors = "No errors"
+    , errors = Nothing
     }
         ! List.map (\e -> getPullRequestData e) config.repositories
 
@@ -101,6 +101,7 @@ config =
         , Repository "rtfeldman" "elm-css"
         , Repository "rtfeldman" "elm-webpack-loader"
         , Repository "billperegoy" "elm-components"
+        , Repository "billperegoy" "elm-pr-monitor"
         ]
     }
 
@@ -137,7 +138,7 @@ update msg model =
                 ! []
 
         GetPullRequestDataHttpFail error ->
-            { model | errors = toString error }
+            { model | errors = Just (toString error) }
                 ! []
 
         Tick time ->
@@ -161,15 +162,44 @@ repoViewElement repository =
         ]
 
 
+header : Html Msg
+header =
+    div [ class "jumbotron" ]
+        [ h1 [ class "text-center" ] [ text "Elm Pull Request Monitor" ]
+        ]
+
+
+pullRequestTable : Model -> Html Msg
+pullRequestTable model =
+    table [ class "table" ]
+        [ tbody []
+            (List.map (\e -> repoViewElement e) model.pullRequests)
+        ]
+
+
+currentTime : Model -> Html Msg
+currentTime model =
+    p [] [ text (toString (fromTime model.currentTime)) ]
+
+
+errors : Model -> Html Msg
+errors model =
+    case model.errors of
+        Nothing ->
+            p [] []
+
+        Just a ->
+            p [] [ text a ]
+
+
 view : Model -> Html Msg
 view model =
     div []
-        [ p []
-            [ text model.errors ]
-        , p [] [ text (toString (fromTime model.currentTime)) ]
-        , table [ class "table" ]
-            [ tbody []
-                (List.map (\e -> repoViewElement e) model.pullRequests)
+        [ header
+        , div [ class "container" ]
+            [ errors model
+            , currentTime model
+            , pullRequestTable model
             ]
         ]
 
