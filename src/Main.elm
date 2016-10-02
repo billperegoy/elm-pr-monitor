@@ -168,7 +168,7 @@ elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
         rValue =
-            truncate (255 * (elapsedTime / 300))
+            truncate ((255 * elapsedTime) / 300)
     in
         ( "background-color", "rgb(" ++ toString rValue ++ ",0,0)" )
 
@@ -182,7 +182,7 @@ repoViewElement model repository =
         elapsedTime =
             model.currentTime - prTime
     in
-        tr [ style [ elapsedTimeToColor 0.0 ] ]
+        tr [ style [ elapsedTimeToColor elapsedTime ] ]
             [ td [] [ text repository.head.repo.name ]
             , td [] [ text (toString repository.number) ]
             , td [] [ text repository.body ]
