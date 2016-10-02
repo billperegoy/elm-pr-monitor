@@ -176,15 +176,15 @@ elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
         decayTimeInSeconds =
-            300
+            10000
 
         percentDone =
-            Debug.log "percent: " (max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100)
+            max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
 
         percentLeft =
             100.0 - percentDone
 
-        -- Want this to go from 100% down to 50% over time
+        -- Want this to go from 50% down to 100% over time
         lValue =
             truncate (50.0 + (percentLeft / 2))
     in
@@ -206,21 +206,34 @@ repoViewElement model repository =
             , td [] [ text repository.body ]
             , td [] [ text repository.created_at ]
             , td [] [ text repository.state ]
-            , td [] [ text (toString (inSeconds (elapsedTime))) ]
             ]
 
 
-header : Html Msg
-header =
+pageHeader : Html Msg
+pageHeader =
     div [ class "jumbotron" ]
         [ h1 [ class "text-center" ] [ text "Elm Pull Request Monitor" ]
+        ]
+
+
+pullRequestTableHeader : Html Msg
+pullRequestTableHeader =
+    thead []
+        [ tr []
+            [ td [] [ text "Repo" ]
+            , td [] [ text "PR#" ]
+            , td [] [ text "Description" ]
+            , td [] [ text "Date" ]
+            , td [] [ text "State" ]
+            ]
         ]
 
 
 pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     table [ class "table" ]
-        [ tbody []
+        [ pullRequestTableHeader
+        , tbody []
             (List.map (\e -> repoViewElement model e) model.pullRequests)
         ]
 
@@ -261,7 +274,7 @@ errors model =
 view : Model -> Html Msg
 view model =
     div []
-        [ header
+        [ pageHeader
         , div [ class "container" ]
             [ errors model
             , currentTime model
