@@ -75,8 +75,8 @@ pullRequestDataDecoder =
 getPullRequestData : Repository -> Cmd Msg
 getPullRequestData repository =
     Task.perform
-        GetPullRequestDataHttpFail
-        GetPullRequestDataHttpSucceed
+        PullRequestDataHttpFail
+        PullRequestDataHttpSucceed
         (Http.get pullRequestListDecoder (pullRequestUrl repository))
 
 
@@ -91,26 +91,28 @@ init =
 
 type alias Config =
     { repositories : List Repository
+    , decayTimeInDays : Float
     }
 
 
 config : Config
 config =
     { repositories =
-        [ --Repository "rtfeldman" "node-elm-compiler"
-          --, Repository "rtfeldman" "elm-css"
-          --, Repository "rtfeldman" "elm-webpack-loader"
-          --, Repository "billperegoy" "elm-components"
-          Repository "billperegoy" "elm-pr-monitor"
+        [ Repository "rtfeldman" "node-elm-compiler"
+        , Repository "rtfeldman" "elm-css"
+        , Repository "rtfeldman" "elm-webpack-loader"
+        , Repository "billperegoy" "elm-components"
+        , Repository "billperegoy" "elm-pr-monitor"
         ]
+    , decayTimeInDays = 1
     }
 
 
 type Msg
     = GetPullRequestData Repository
-    | GetPullRequestDataHttpFail Http.Error
-    | GetPullRequestDataHttpSucceed (List PullRequestData)
-    | Tick Float
+    | PullRequestDataHttpFail Http.Error
+    | PullRequestDataHttpSucceed (List PullRequestData)
+    | EverySecond Float
 
 
 apiBase : String
@@ -146,15 +148,15 @@ update msg model =
         GetPullRequestData repository ->
             model ! []
 
-        GetPullRequestDataHttpSucceed results ->
+        PullRequestDataHttpSucceed results ->
             { model | pullRequests = model.pullRequests ++ results }
                 ! []
 
-        GetPullRequestDataHttpFail error ->
+        PullRequestDataHttpFail error ->
             { model | errors = Just (toString error) }
                 ! []
 
-        Tick time ->
+        EverySecond time ->
             { model | currentTime = time } ! []
 
 
@@ -176,7 +178,7 @@ elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
         decayTimeInSeconds =
-            10000
+            config.decayTimeInDays * 24 * 3600
 
         percentDone =
             max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
@@ -200,19 +202,23 @@ repoViewElement model repository =
         elapsedTime =
             model.currentTime - prTime
     in
-        tr [ style [ elapsedTimeToColor elapsedTime ] ]
-            [ td [] [ text repository.head.repo.name ]
+        tr []
+            [ td
+                [ style [ elapsedTimeToColor elapsedTime ] ]
+                [ text repository.state ]
+            , td [] [ text repository.head.repo.name ]
             , td [] [ text (toString repository.number) ]
             , td [] [ text repository.body ]
             , td [] [ text repository.created_at ]
-            , td [] [ text repository.state ]
             ]
 
 
 pageHeader : Html Msg
 pageHeader =
     div [ class "jumbotron" ]
-        [ h1 [ class "text-center" ] [ text "Elm Pull Request Monitor" ]
+        [ h1
+            [ class "text-center" ]
+            [ text "Elm Pull Request Monitor" ]
         ]
 
 
@@ -265,10 +271,10 @@ errors : Model -> Html Msg
 errors model =
     case model.errors of
         Nothing ->
-            p [] []
+            div [] []
 
         Just a ->
-            p [] [ text a ]
+            div [ class "alert alert-danger" ] [ text a ]
 
 
 view : Model -> Html Msg
@@ -285,4 +291,4 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [ every Time.second Tick ]
+    Sub.batch [ every Time.second EverySecond ]
