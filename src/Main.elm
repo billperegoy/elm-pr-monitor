@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Html.App as App
 import Task exposing (..)
 import Http exposing (..)
@@ -10,6 +11,7 @@ import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Time exposing (..)
 import Date exposing (..)
+import String exposing (..)
 
 
 main : Program Never
@@ -30,20 +32,18 @@ main =
 
 type alias Config =
     { repositories : List Repository
-    , decayTimeInDays : Float
     }
 
 
 config : Config
 config =
     { repositories =
-        [ Repository "rtfeldman" "node-elm-compiler"
-        , Repository "rtfeldman" "elm-css"
-        , Repository "rtfeldman" "elm-webpack-loader"
-        , Repository "billperegoy" "elm-components"
-        , Repository "billperegoy" "elm-pr-monitor"
+        [ --  Repository "rtfeldman" "node-elm-compiler"
+          --, Repository "rtfeldman" "elm-css"
+          --, Repository "rtfeldman" "elm-webpack-loader"
+          --, Repository "billperegoy" "elm-components"
+          Repository "billperegoy" "elm-pr-monitor"
         ]
-    , decayTimeInDays = 1
     }
 
 
@@ -56,6 +56,8 @@ config =
 type alias Model =
     { currentTime : Time
     , pullRequests : List PullRequestData
+    , decayTimeFormValue : String
+    , decayTimeInDays : Float
     , errors : Maybe String
     }
 
@@ -93,6 +95,8 @@ init : ( Model, Cmd Msg )
 init =
     { currentTime = 0.0
     , pullRequests = []
+    , decayTimeFormValue = ""
+    , decayTimeInDays = 1
     , errors = Nothing
     }
         ! List.map (\e -> getPullRequestData e) config.repositories
@@ -172,9 +176,25 @@ getPullRequestData repository =
 --
 
 
+decayTimeToFloat : String -> Float -> Float
+decayTimeToFloat string default =
+    let
+        convertedValue =
+            Debug.log "Converted: " String.toFloat string
+    in
+        case convertedValue of
+            Ok value ->
+                value
+
+            Err a ->
+                default
+
+
 type Msg
     = PullRequestDataHttpFail Http.Error
     | PullRequestDataHttpSucceed (List PullRequestData)
+    | SetDecayTimeFormValue String
+    | UpdateDecayTime
     | EverySecond Float
 
 
@@ -189,6 +209,16 @@ update msg model =
             { model | errors = Just (toString error) }
                 ! []
 
+        SetDecayTimeFormValue value ->
+            { model | decayTimeFormValue = value } ! []
+
+        UpdateDecayTime ->
+            { model
+                | decayTimeInDays =
+                    Debug.log "XX: " (decayTimeToFloat model.decayTimeFormValue model.decayTimeInDays)
+            }
+                ! []
+
         EverySecond time ->
             { model | currentTime = time } ! []
 
@@ -201,11 +231,11 @@ max val max =
         val
 
 
-elapsedTimeToColor : Float -> ( String, String )
-elapsedTimeToColor elapsedTime =
+elapsedTimeToColor : Model -> Float -> ( String, String )
+elapsedTimeToColor model elapsedTime =
     let
         decayTimeInSeconds =
-            config.decayTimeInDays * 24 * 3600
+            model.decayTimeInDays * 24 * 3600
 
         percentDone =
             max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
@@ -231,7 +261,7 @@ repoViewElement model repository =
     in
         tr []
             [ td
-                [ style [ elapsedTimeToColor elapsedTime ] ]
+                [ style [ elapsedTimeToColor model elapsedTime ] ]
                 [ text repository.state ]
             , td [] [ text repository.head.repo.name ]
             , td [] [ text (toString repository.number) ]
@@ -253,11 +283,11 @@ pullRequestTableHeader : Html Msg
 pullRequestTableHeader =
     thead []
         [ tr []
-            [ td [] [ text "Repo" ]
+            [ td [] [ text "State" ]
+            , td [] [ text "Repo" ]
             , td [] [ text "PR#" ]
             , td [] [ text "Description" ]
             , td [] [ text "Date" ]
-            , td [] [ text "State" ]
             ]
         ]
 
@@ -304,6 +334,37 @@ errors model =
             div [ class "alert alert-danger" ] [ text a ]
 
 
+decayDisplay : Float -> Html Msg
+decayDisplay decayTimeInDays =
+    div []
+        [ text
+            ("Current decay time (days): "
+                ++ (toString
+                        decayTimeInDays
+                   )
+            )
+        ]
+
+
+decayForm : Html Msg
+decayForm =
+    div [ class "form-group", style [ ( "width", "200px" ) ] ]
+        [ label [ for "decayTimeInput" ] [ text "Set Decay Time" ]
+        , input
+            [ class "form-control"
+            , id "decayTimeInput"
+            , onInput SetDecayTimeFormValue
+            ]
+            []
+        , button
+            [ type' "submit"
+            , class "btn btn-primary"
+            , onClick UpdateDecayTime
+            ]
+            [ text "Submit" ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -311,6 +372,8 @@ view model =
         , div [ class "container" ]
             [ errors model
             , currentTime model
+            , decayDisplay model.decayTimeInDays
+            , decayForm
             , pullRequestTable model
             ]
         ]
