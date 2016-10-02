@@ -12,6 +12,7 @@ import Time exposing (..)
 import Date exposing (..)
 
 
+main : Program Never
 main =
     App.program
         { init = init
@@ -21,8 +22,39 @@ main =
         }
 
 
+
+--
+-- Config
+--
+
+
+type alias Config =
+    { repositories : List Repository
+    , decayTimeInDays : Float
+    }
+
+
+config : Config
+config =
+    { repositories =
+        [ Repository "rtfeldman" "node-elm-compiler"
+        , Repository "rtfeldman" "elm-css"
+        , Repository "rtfeldman" "elm-webpack-loader"
+        , Repository "billperegoy" "elm-components"
+        , Repository "billperegoy" "elm-pr-monitor"
+        ]
+    , decayTimeInDays = 1
+    }
+
+
+
+--
+-- Model
+--
+
+
 type alias Model =
-    { currentTime : Float
+    { currentTime : Time
     , pullRequests : List PullRequestData
     , errors : Maybe String
     }
@@ -45,39 +77,16 @@ type alias RepoData =
     { name : String }
 
 
-repoDecoder : Decoder RepoData
-repoDecoder =
-    decode RepoData
-        |> Json.Decode.Pipeline.required "name" Json.Decode.string
+type alias Repository =
+    { user : String
+    , project : String
+    }
 
 
-headDecoder : Decoder HeadData
-headDecoder =
-    decode HeadData
-        |> Json.Decode.Pipeline.required "repo" repoDecoder
 
-
-pullRequestListDecoder : Decoder (List PullRequestData)
-pullRequestListDecoder =
-    Json.Decode.list pullRequestDataDecoder
-
-
-pullRequestDataDecoder : Decoder PullRequestData
-pullRequestDataDecoder =
-    decode PullRequestData
-        |> Json.Decode.Pipeline.required "number" Json.Decode.int
-        |> Json.Decode.Pipeline.required "body" Json.Decode.string
-        |> Json.Decode.Pipeline.required "state" Json.Decode.string
-        |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
-        |> Json.Decode.Pipeline.required "head" headDecoder
-
-
-getPullRequestData : Repository -> Cmd Msg
-getPullRequestData repository =
-    Task.perform
-        PullRequestDataHttpFail
-        PullRequestDataHttpSucceed
-        (Http.get pullRequestListDecoder (pullRequestUrl repository))
+--
+-- Init
+--
 
 
 init : ( Model, Cmd Msg )
@@ -89,30 +98,10 @@ init =
         ! List.map (\e -> getPullRequestData e) config.repositories
 
 
-type alias Config =
-    { repositories : List Repository
-    , decayTimeInDays : Float
-    }
 
-
-config : Config
-config =
-    { repositories =
-        [ Repository "rtfeldman" "node-elm-compiler"
-        , Repository "rtfeldman" "elm-css"
-        , Repository "rtfeldman" "elm-webpack-loader"
-        , Repository "billperegoy" "elm-components"
-        , Repository "billperegoy" "elm-pr-monitor"
-        ]
-    , decayTimeInDays = 1
-    }
-
-
-type Msg
-    = GetPullRequestData Repository
-    | PullRequestDataHttpFail Http.Error
-    | PullRequestDataHttpSucceed (List PullRequestData)
-    | EverySecond Float
+--
+-- Http
+--
 
 
 apiBase : String
@@ -142,12 +131,56 @@ commentsUrl repository pullRequestId =
         ++ "/comments"
 
 
+pullRequestListDecoder : Decoder (List PullRequestData)
+pullRequestListDecoder =
+    Json.Decode.list pullRequestDataDecoder
+
+
+headDecoder : Decoder HeadData
+headDecoder =
+    decode HeadData
+        |> Json.Decode.Pipeline.required "repo" repoDecoder
+
+
+repoDecoder : Decoder RepoData
+repoDecoder =
+    decode RepoData
+        |> Json.Decode.Pipeline.required "name" Json.Decode.string
+
+
+pullRequestDataDecoder : Decoder PullRequestData
+pullRequestDataDecoder =
+    decode PullRequestData
+        |> Json.Decode.Pipeline.required "number" Json.Decode.int
+        |> Json.Decode.Pipeline.required "body" Json.Decode.string
+        |> Json.Decode.Pipeline.required "state" Json.Decode.string
+        |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
+        |> Json.Decode.Pipeline.required "head" headDecoder
+
+
+getPullRequestData : Repository -> Cmd Msg
+getPullRequestData repository =
+    Task.perform
+        PullRequestDataHttpFail
+        PullRequestDataHttpSucceed
+        (Http.get pullRequestListDecoder (pullRequestUrl repository))
+
+
+
+--
+-- Update
+--
+
+
+type Msg
+    = PullRequestDataHttpFail Http.Error
+    | PullRequestDataHttpSucceed (List PullRequestData)
+    | EverySecond Float
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GetPullRequestData repository ->
-            model ! []
-
         PullRequestDataHttpSucceed results ->
             { model | pullRequests = model.pullRequests ++ results }
                 ! []
@@ -158,12 +191,6 @@ update msg model =
 
         EverySecond time ->
             { model | currentTime = time } ! []
-
-
-type alias Repository =
-    { user : String
-    , project : String
-    }
 
 
 max : Float -> Float -> Float
