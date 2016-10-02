@@ -167,8 +167,11 @@ type alias Repository =
 elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
+        rValueFloat =
+            Debug.log "Val: " (255 * (inSeconds elapsedTime)) / 300
+
         rValue =
-            Debug.log "Time: " truncate ((255 * elapsedTime) / 300)
+            Debug.log "Val2: " (truncate rValueFloat)
     in
         ( "background-color", "rgb(" ++ toString rValue ++ ",0,0)" )
 
