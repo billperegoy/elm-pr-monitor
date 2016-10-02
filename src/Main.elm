@@ -164,6 +164,15 @@ type alias Repository =
     }
 
 
+elapsedTimeToColor : Float -> ( String, String )
+elapsedTimeToColor elapsedTime =
+    let
+        rValue =
+            truncate (255 * (elapsedTime / 300))
+    in
+        ( "background-color", "rgb(" ++ toString rValue ++ ",0,0)" )
+
+
 repoViewElement : Model -> PullRequestData -> Html Msg
 repoViewElement model repository =
     let
@@ -173,13 +182,13 @@ repoViewElement model repository =
         elapsedTime =
             model.currentTime - prTime
     in
-        tr []
+        tr [ style [ elapsedTimeToColor 0.0 ] ]
             [ td [] [ text repository.head.repo.name ]
             , td [] [ text (toString repository.number) ]
             , td [] [ text repository.body ]
             , td [] [ text repository.created_at ]
             , td [] [ text repository.state ]
-            , td [] [ text (toString (inMinutes (elapsedTime))) ]
+            , td [] [ text (toString (inSeconds (elapsedTime))) ]
             ]
 
 
