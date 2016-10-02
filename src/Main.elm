@@ -107,8 +107,7 @@ config =
 
 
 type Msg
-    = NoOp
-    | GetPullRequestData Repository
+    = GetPullRequestData Repository
     | GetPullRequestDataHttpFail Http.Error
     | GetPullRequestDataHttpSucceed (List PullRequestData)
     | Tick Float
@@ -121,15 +120,29 @@ apiBase =
 
 pullRequestUrl : Repository -> String
 pullRequestUrl repo =
-    apiBase ++ "/repos/" ++ repo.user ++ "/" ++ repo.project ++ "/pulls"
+    apiBase
+        ++ "/repos/"
+        ++ repo.user
+        ++ "/"
+        ++ repo.project
+        ++ "/pulls"
+
+
+commentsUrl : Repository -> Int -> String
+commentsUrl repository pullRequestId =
+    apiBase
+        ++ "/repos/"
+        ++ repository.user
+        ++ "/"
+        ++ repository.project
+        ++ "/issues/`"
+        ++ toString pullRequestId
+        ++ "/comments"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            model ! []
-
         GetPullRequestData repository ->
             model ! []
 
@@ -151,15 +164,23 @@ type alias Repository =
     }
 
 
-repoViewElement : PullRequestData -> Html Msg
-repoViewElement repository =
-    tr []
-        [ td [] [ text repository.head.repo.name ]
-        , td [] [ text (toString repository.number) ]
-        , td [] [ text repository.body ]
-        , td [] [ text repository.created_at ]
-        , td [] [ text repository.state ]
-        ]
+repoViewElement : Model -> PullRequestData -> Html Msg
+repoViewElement model repository =
+    let
+        prTime =
+            dateStringToTime repository.created_at
+
+        elapsedTime =
+            model.currentTime - prTime
+    in
+        tr []
+            [ td [] [ text repository.head.repo.name ]
+            , td [] [ text (toString repository.number) ]
+            , td [] [ text repository.body ]
+            , td [] [ text repository.created_at ]
+            , td [] [ text repository.state ]
+            , td [] [ text (toString (inMinutes (elapsedTime))) ]
+            ]
 
 
 header : Html Msg
@@ -173,8 +194,22 @@ pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     table [ class "table" ]
         [ tbody []
-            (List.map (\e -> repoViewElement e) model.pullRequests)
+            (List.map (\e -> repoViewElement model e) model.pullRequests)
         ]
+
+
+dateStringToTime : String -> Time
+dateStringToTime dateString =
+    let
+        dateResult =
+            Date.fromString dateString
+    in
+        case dateResult of
+            Ok value ->
+                toTime value
+
+            Err _ ->
+                0.0
 
 
 currentTime : Model -> Html Msg
