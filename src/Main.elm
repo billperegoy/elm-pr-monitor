@@ -164,16 +164,31 @@ type alias Repository =
     }
 
 
+max : Float -> Float -> Float
+max val max =
+    if val > max then
+        max
+    else
+        val
+
+
 elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
-        rValueFloat =
-            Debug.log "Val: " (255 * (inSeconds elapsedTime)) / 300
+        decayTimeInSeconds =
+            300
 
-        rValue =
-            Debug.log "Val2: " (truncate rValueFloat)
+        percentDone =
+            Debug.log "percent: " (max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100)
+
+        percentLeft =
+            100.0 - percentDone
+
+        -- Want this to go from 100% down to 50% over time
+        lValue =
+            truncate (50.0 + (percentLeft / 2))
     in
-        ( "background-color", "rgb(" ++ toString rValue ++ ",0,0)" )
+        ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
 
 
 repoViewElement : Model -> PullRequestData -> Html Msg
