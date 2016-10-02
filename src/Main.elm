@@ -97,11 +97,11 @@ type alias Config =
 config : Config
 config =
     { repositories =
-        [ Repository "rtfeldman" "node-elm-compiler"
-        , Repository "rtfeldman" "elm-css"
-        , Repository "rtfeldman" "elm-webpack-loader"
-        , Repository "billperegoy" "elm-components"
-        , Repository "billperegoy" "elm-pr-monitor"
+        [ --Repository "rtfeldman" "node-elm-compiler"
+          --, Repository "rtfeldman" "elm-css"
+          --, Repository "rtfeldman" "elm-webpack-loader"
+          --, Repository "billperegoy" "elm-components"
+          Repository "billperegoy" "elm-pr-monitor"
         ]
     }
 
@@ -168,7 +168,7 @@ elapsedTimeToColor : Float -> ( String, String )
 elapsedTimeToColor elapsedTime =
     let
         rValue =
-            truncate ((255 * elapsedTime) / 300)
+            Debug.log "Time: " truncate ((255 * elapsedTime) / 300)
     in
         ( "background-color", "rgb(" ++ toString rValue ++ ",0,0)" )
 
