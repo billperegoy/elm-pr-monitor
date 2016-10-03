@@ -215,7 +215,7 @@ update msg model =
         UpdateDecayTime ->
             { model
                 | decayTimeInDays =
-                    Debug.log "XX: " (decayTimeToFloat model.decayTimeFormValue model.decayTimeInDays)
+                    decayTimeToFloat model.decayTimeFormValue model.decayTimeInDays
             }
                 ! []
 
