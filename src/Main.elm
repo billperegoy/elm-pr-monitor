@@ -180,7 +180,7 @@ decayTimeToFloat : String -> Float -> Float
 decayTimeToFloat string default =
     let
         convertedValue =
-            Debug.log "Converted: " String.toFloat string
+            String.toFloat string
     in
         case convertedValue of
             Ok value ->
