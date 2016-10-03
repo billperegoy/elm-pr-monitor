@@ -99,7 +99,7 @@ init =
     , decayTimeInDays = 1
     , errors = Nothing
     }
-        ! List.map (\e -> getPullRequestData e) config.repositories
+        ! List.map (\repo -> getPullRequestData repo) config.repositories
 
 
 
@@ -110,6 +110,7 @@ init =
 
 apiBase : String
 apiBase =
+    --"https://github.roving.com/api/v3/users/es/repos"
     "https://api.github.com"
 
 
