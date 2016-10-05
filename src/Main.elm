@@ -12,6 +12,7 @@ import Json.Decode.Pipeline exposing (..)
 import Time exposing (..)
 import Date exposing (..)
 import String exposing (..)
+import TimeAgo exposing (..)
 
 
 main : Program Never
@@ -61,10 +62,12 @@ type alias Model =
 
 type alias PullRequestData =
     { number : Int
+    , html_url : String
     , body : String
     , state : String
     , created_at : String
     , head : HeadData
+    , user : UserData
     }
 
 
@@ -74,6 +77,11 @@ type alias HeadData =
 
 type alias RepoData =
     { name : String }
+
+
+type alias UserData =
+    { login : String
+    }
 
 
 type alias Repository =
@@ -143,6 +151,11 @@ headDecoder =
         |> Json.Decode.Pipeline.required "repo" repoDecoder
 
 
+userDecoder =
+    decode UserData
+        |> Json.Decode.Pipeline.required "login" Json.Decode.string
+
+
 repoDecoder : Decoder RepoData
 repoDecoder =
     decode RepoData
@@ -153,10 +166,12 @@ pullRequestDataDecoder : Decoder PullRequestData
 pullRequestDataDecoder =
     decode PullRequestData
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
+        |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "state" Json.Decode.string
         |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
         |> Json.Decode.Pipeline.required "head" headDecoder
+        |> Json.Decode.Pipeline.required "user" userDecoder
 
 
 getPullRequestData : Repository -> Cmd Msg
@@ -247,11 +262,11 @@ elapsedTimeToColor model elapsedTime =
         ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
 
 
-repoViewElement : Model -> PullRequestData -> Html Msg
-repoViewElement model repository =
+pullRequestViewElement : Model -> PullRequestData -> Html Msg
+pullRequestViewElement model pullRequest =
     let
         prTime =
-            dateStringToTime repository.created_at
+            dateStringToTime pullRequest.created_at
 
         elapsedTime =
             model.currentTime - prTime
@@ -259,11 +274,16 @@ repoViewElement model repository =
         tr []
             [ td
                 [ style [ elapsedTimeToColor model elapsedTime ] ]
-                [ text repository.state ]
-            , td [] [ text repository.head.repo.name ]
-            , td [] [ text (toString repository.number) ]
-            , td [] [ text repository.body ]
-            , td [] [ text repository.created_at ]
+                [ text (timeAgoInWords elapsedTime) ]
+            , td [] [ text pullRequest.head.repo.name ]
+            , td [] [ text pullRequest.user.login ]
+            , td []
+                [ a
+                    [ href pullRequest.html_url, target "_blank" ]
+                    [ text (toString pullRequest.number)
+                    ]
+                ]
+            , td [] [ text (slice 0 63 pullRequest.body) ]
             ]
 
 
@@ -280,11 +300,11 @@ pullRequestTableHeader : Html Msg
 pullRequestTableHeader =
     thead []
         [ tr []
-            [ td [] [ text "State" ]
+            [ td [] [ text "Age" ]
             , td [] [ text "Repo" ]
+            , td [] [ text "Owner" ]
             , td [] [ text "PR#" ]
             , td [] [ text "Description" ]
-            , td [] [ text "Date" ]
             ]
         ]
 
@@ -294,7 +314,7 @@ pullRequestTable model =
     table [ class "table" ]
         [ pullRequestTableHeader
         , tbody []
-            (List.map (\e -> repoViewElement model e) model.pullRequests)
+            (List.map (\pulRequest -> pullRequestViewElement model pulRequest) model.pullRequests)
         ]
 
 
