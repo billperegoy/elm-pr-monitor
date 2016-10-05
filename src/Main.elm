@@ -38,11 +38,8 @@ type alias Config =
 config : Config
 config =
     { repositories =
-        [ --  Repository "rtfeldman" "node-elm-compiler"
-          --, Repository "rtfeldman" "elm-css"
-          --, Repository "rtfeldman" "elm-webpack-loader"
-          --, Repository "billperegoy" "elm-components"
-          Repository "billperegoy" "elm-pr-monitor"
+        [ Repository "es" "contacts-core"
+        , Repository "contacts" "contacts-listpicker-ui"
         ]
     }
 
@@ -96,7 +93,7 @@ init =
     { currentTime = 0.0
     , pullRequests = []
     , decayTimeFormValue = ""
-    , decayTimeInDays = 1
+    , decayTimeInDays = 5
     , errors = Nothing
     }
         ! List.map (\repo -> getPullRequestData repo) config.repositories
@@ -110,8 +107,7 @@ init =
 
 apiBase : String
 apiBase =
-    --"https://github.roving.com/api/v3/users/es/repos"
-    "https://api.github.com"
+    "https://github.roving.com/api/v3"
 
 
 pullRequestUrl : Repository -> String
