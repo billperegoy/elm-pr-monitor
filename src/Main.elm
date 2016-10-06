@@ -12,6 +12,7 @@ import Json.Decode.Pipeline exposing (..)
 import Time exposing (..)
 import Date exposing (..)
 import String exposing (..)
+import List exposing (..)
 import TimeAgo exposing (..)
 
 
@@ -62,10 +63,10 @@ type alias Model =
 
 type alias PullRequestData =
     { number : Int
-    , html_url : String
+    , htmlUrl : String
     , body : String
     , state : String
-    , created_at : String
+    , createdAt : String
     , head : HeadData
     , user : UserData
     }
@@ -266,7 +267,7 @@ pullRequestViewElement : Model -> PullRequestData -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =
-            dateStringToTime pullRequest.created_at
+            dateStringToTime pullRequest.createdAt
 
         elapsedTime =
             model.currentTime - prTime
@@ -275,14 +276,14 @@ pullRequestViewElement model pullRequest =
             [ td
                 [ style [ elapsedTimeToColor model elapsedTime ] ]
                 [ text (timeAgoInWords elapsedTime) ]
-            , td [] [ text pullRequest.head.repo.name ]
-            , td [] [ text pullRequest.user.login ]
             , td []
                 [ a
-                    [ href pullRequest.html_url, target "_blank" ]
+                    [ href pullRequest.htmlUrl, target "_blank" ]
                     [ text (toString pullRequest.number)
                     ]
                 ]
+            , td [] [ text pullRequest.head.repo.name ]
+            , td [] [ text pullRequest.user.login ]
             , td [] [ text (slice 0 63 pullRequest.body) ]
             ]
 
@@ -300,22 +301,32 @@ pullRequestTableHeader : Html Msg
 pullRequestTableHeader =
     thead []
         [ tr []
-            [ td [] [ text "Age" ]
-            , td [] [ text "Repo" ]
-            , td [] [ text "Owner" ]
-            , td [] [ text "PR#" ]
-            , td [] [ text "Description" ]
+            [ th [] [ text "Age" ]
+            , th [] [ text "PR#" ]
+            , th [] [ text "Repository" ]
+            , th [] [ text "Owner" ]
+            , th [] [ text "Description" ]
             ]
         ]
 
 
+sortByCreatedAt : PullRequestData -> PullRequestData -> Order
+sortByCreatedAt a b =
+    compare (dateStringToTime a.createdAt)
+        (dateStringToTime b.createdAt)
+
+
 pullRequestTable : Model -> Html Msg
 pullRequestTable model =
-    table [ class "table" ]
-        [ pullRequestTableHeader
-        , tbody []
-            (List.map (\pulRequest -> pullRequestViewElement model pulRequest) model.pullRequests)
-        ]
+    let
+        sortedPullRequests =
+            sortWith sortByCreatedAt model.pullRequests
+    in
+        table [ class "table" ]
+            [ pullRequestTableHeader
+            , tbody []
+                (List.map (\pulRequest -> pullRequestViewElement model pulRequest) sortedPullRequests)
+            ]
 
 
 dateStringToTime : String -> Time
