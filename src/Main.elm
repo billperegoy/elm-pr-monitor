@@ -42,6 +42,7 @@ config =
     { repositories =
         [ Repository "es" "contacts-core"
         , Repository "contacts" "contacts-listpicker-ui"
+        , Repository "es" "smsjmml"
         ]
     }
 
