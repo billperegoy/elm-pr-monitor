@@ -10,39 +10,24 @@ import Time exposing (..)
 import Date exposing (..)
 import String exposing (..)
 import List exposing (..)
+
+
+--
+
 import TimeAgo exposing (..)
 import Github exposing (..)
+import Config exposing (..)
+import DateUtils exposing (..)
 
 
 main : Program Never
 main =
     App.program
-        { init = init
+        { init = initModel
         , view = view
         , update = update
         , subscriptions = subscriptions
         }
-
-
-
---
--- Config
---
-
-
-type alias Config =
-    { repositories : List Repository
-    }
-
-
-config : Config
-config =
-    { repositories =
-        [ Repository "es" "contacts-core"
-        , Repository "contacts" "contacts-listpicker-ui"
-        , Repository "es" "smsjmml"
-        ]
-    }
 
 
 
@@ -60,68 +45,25 @@ type alias Model =
     }
 
 
-type alias Repository =
-    { user : String
-    , project : String
-    }
-
-
 
 --
 -- Init
 --
 
 
-init : ( Model, Cmd Msg )
-init =
-    { currentTime = 0.0
-    , pullRequests = []
-    , decayTimeFormValue = ""
-    , decayTimeInDays = 5
-    , errors = Nothing
-    }
-        ! List.map (\repo -> getPullRequestData repo) config.repositories
-
-
-
---
--- Http
---
-
-
-apiBase : String
-apiBase =
-    "https://github.roving.com/api/v3"
-
-
-pullRequestUrl : Repository -> String
-pullRequestUrl repo =
-    apiBase
-        ++ "/repos/"
-        ++ repo.user
-        ++ "/"
-        ++ repo.project
-        ++ "/pulls"
-
-
-commentsUrl : Repository -> Int -> String
-commentsUrl repository pullRequestId =
-    apiBase
-        ++ "/repos/"
-        ++ repository.user
-        ++ "/"
-        ++ repository.project
-        ++ "/issues/`"
-        ++ toString pullRequestId
-        ++ "/comments"
-
-
-getPullRequestData : Repository -> Cmd Msg
-getPullRequestData repository =
-    Task.perform
-        PullRequestDataHttpFail
-        PullRequestDataHttpSucceed
-        (Http.get Github.pullRequestListDecoder (pullRequestUrl repository))
+initModel : ( Model, Cmd Msg )
+initModel =
+    let
+        config =
+            Config.data
+    in
+        { currentTime = 0.0
+        , pullRequests = []
+        , decayTimeFormValue = ""
+        , decayTimeInDays = 5
+        , errors = Nothing
+        }
+            ! List.map (\repo -> getPullRequestData repo) config.repositories
 
 
 
@@ -130,23 +72,9 @@ getPullRequestData repository =
 --
 
 
-decayTimeToFloat : String -> Float -> Float
-decayTimeToFloat string default =
-    let
-        convertedValue =
-            String.toFloat string
-    in
-        case convertedValue of
-            Ok value ->
-                value
-
-            Err a ->
-                default
-
-
 type Msg
     = PullRequestDataHttpFail Http.Error
-    | PullRequestDataHttpSucceed (List PullRequestData)
+    | PullRequestDataHttpSucceed (List Github.PullRequestData)
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -177,6 +105,20 @@ update msg model =
             { model | currentTime = time } ! []
 
 
+
+--
+-- Http
+--
+
+
+getPullRequestData : Config.Repository -> Cmd Msg
+getPullRequestData repository =
+    Task.perform
+        PullRequestDataHttpFail
+        PullRequestDataHttpSucceed
+        (Http.get Github.pullRequestListDecoder (Config.pullRequestUrl repository))
+
+
 max : Float -> Float -> Float
 max val max =
     if val > max then
@@ -185,11 +127,25 @@ max val max =
         val
 
 
-elapsedTimeToColor : Model -> Float -> ( String, String )
-elapsedTimeToColor model elapsedTime =
+decayTimeToFloat : String -> Float -> Float
+decayTimeToFloat string default =
+    let
+        convertedValue =
+            String.toFloat string
+    in
+        case convertedValue of
+            Ok value ->
+                value
+
+            Err a ->
+                default
+
+
+elapsedTimeToColor : Time -> Float -> ( String, String )
+elapsedTimeToColor decayTimeInDays elapsedTime =
     let
         decayTimeInSeconds =
-            model.decayTimeInDays * 24 * 3600
+            decayTimeInDays * 24 * 3600
 
         percentDone =
             max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
@@ -204,18 +160,21 @@ elapsedTimeToColor model elapsedTime =
         ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
 
 
-pullRequestViewElement : Model -> PullRequestData -> Html Msg
+pullRequestViewElement : Model -> Github.PullRequestData -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =
-            dateStringToTime pullRequest.createdAt
+            DateUtils.dateStringToTime pullRequest.createdAt
 
         elapsedTime =
             model.currentTime - prTime
     in
         tr []
             [ td
-                [ style [ elapsedTimeToColor model elapsedTime ] ]
+                [ style
+                    [ elapsedTimeToColor model.decayTimeInDays elapsedTime
+                    ]
+                ]
                 [ text (timeAgoInWords elapsedTime) ]
             , td []
                 [ a
@@ -251,12 +210,6 @@ pullRequestTableHeader =
         ]
 
 
-sortByCreatedAt : PullRequestData -> PullRequestData -> Order
-sortByCreatedAt a b =
-    compare (dateStringToTime a.createdAt)
-        (dateStringToTime b.createdAt)
-
-
 pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     let
@@ -266,26 +219,15 @@ pullRequestTable model =
         table [ class "table" ]
             [ pullRequestTableHeader
             , tbody []
-                (List.map (\pulRequest -> pullRequestViewElement model pulRequest) sortedPullRequests)
+                (List.map
+                    (\pulRequest -> pullRequestViewElement model pulRequest)
+                    sortedPullRequests
+                )
             ]
 
 
-dateStringToTime : String -> Time
-dateStringToTime dateString =
-    let
-        dateResult =
-            Date.fromString dateString
-    in
-        case dateResult of
-            Ok value ->
-                toTime value
-
-            Err _ ->
-                0.0
-
-
-currentTime : Model -> Html Msg
-currentTime model =
+currentTimeDisplay : Model -> Html Msg
+currentTimeDisplay model =
     let
         timeString =
             "Current Time: " ++ toString (fromTime model.currentTime)
@@ -340,7 +282,7 @@ view model =
         [ pageHeader
         , div [ class "container" ]
             [ errors model
-            , currentTime model
+            , currentTimeDisplay model
             , decayDisplay model.decayTimeInDays
             , decayForm
             , pullRequestTable model
@@ -349,5 +291,5 @@ view model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch [ every Time.second EverySecond ]

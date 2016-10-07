@@ -7,6 +7,11 @@ import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 
 
+--
+
+import DateUtils exposing (..)
+
+
 type alias PullRequestData =
     { number : Int
     , htmlUrl : String
@@ -64,3 +69,9 @@ pullRequestDataDecoder =
         |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
         |> Json.Decode.Pipeline.required "head" headDecoder
         |> Json.Decode.Pipeline.required "user" userDecoder
+
+
+sortByCreatedAt : PullRequestData -> PullRequestData -> Order
+sortByCreatedAt a b =
+    compare (DateUtils.dateStringToTime a.createdAt)
+        (DateUtils.dateStringToTime b.createdAt)
