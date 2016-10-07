@@ -1,10 +1,10 @@
 module DateUtils exposing (..)
 
-import Time exposing (..)
-import Date exposing (..)
+import Time
+import Date
 
 
-dateStringToTime : String -> Time
+dateStringToTime : String -> Time.Time
 dateStringToTime dateString =
     let
         dateResult =
@@ -12,7 +12,7 @@ dateStringToTime dateString =
     in
         case dateResult of
             Ok value ->
-                toTime value
+                Date.toTime value
 
             Err _ ->
                 0.0

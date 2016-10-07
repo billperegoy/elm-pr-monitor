@@ -1,15 +1,13 @@
 module Github exposing (..)
 
-import Task exposing (..)
-import Http exposing (..)
-import Json.Decode exposing (int, string, float, Decoder)
-import Json.Decode exposing (..)
-import Json.Decode.Pipeline exposing (..)
+import Http
+import Json.Decode
+import Json.Decode.Pipeline
 
 
 --
 
-import DateUtils exposing (..)
+import DateUtils
 
 
 type alias PullRequestData =
@@ -36,32 +34,32 @@ type alias UserData =
     }
 
 
-pullRequestListDecoder : Decoder (List PullRequestData)
+pullRequestListDecoder : Json.Decode.Decoder (List PullRequestData)
 pullRequestListDecoder =
     Json.Decode.list pullRequestDataDecoder
 
 
-headDecoder : Decoder HeadData
+headDecoder : Json.Decode.Decoder HeadData
 headDecoder =
-    decode HeadData
+    Json.Decode.Pipeline.decode HeadData
         |> Json.Decode.Pipeline.required "repo" repoDecoder
 
 
-userDecoder : Decoder UserData
+userDecoder : Json.Decode.Decoder UserData
 userDecoder =
-    decode UserData
+    Json.Decode.Pipeline.decode UserData
         |> Json.Decode.Pipeline.required "login" Json.Decode.string
 
 
-repoDecoder : Decoder RepoData
+repoDecoder : Json.Decode.Decoder RepoData
 repoDecoder =
-    decode RepoData
+    Json.Decode.Pipeline.decode RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
 
 
-pullRequestDataDecoder : Decoder PullRequestData
+pullRequestDataDecoder : Json.Decode.Decoder PullRequestData
 pullRequestDataDecoder =
-    decode PullRequestData
+    Json.Decode.Pipeline.decode PullRequestData
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "body" Json.Decode.string

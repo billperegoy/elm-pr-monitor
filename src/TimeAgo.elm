@@ -1,27 +1,27 @@
 module TimeAgo exposing (timeAgoInWords)
 
-import Time exposing (..)
+import Time
 
 
-timeAgoInWords : Time -> String
+timeAgoInWords : Time.Time -> String
 timeAgoInWords duration =
-    if duration <= 30 * second then
+    if duration <= 30 * Time.second then
         "less than a minute"
-    else if duration < 45 * minute then
+    else if duration < 45 * Time.minute then
         reportAsMinutes duration
-    else if duration < 24 * hour then
+    else if duration < 24 * Time.hour then
         reportAsHours duration
-    else if duration < 30 * 24 * hour then
+    else if duration < 30 * 24 * Time.hour then
         reportAsDays duration
     else
         reportAsMonths duration
 
 
-reportAsMinutes : Time -> String
+reportAsMinutes : Time.Time -> String
 reportAsMinutes duration =
     let
         minutes =
-            round (inMinutes duration)
+            round (Time.inMinutes duration)
     in
         if minutes == 1 then
             toString minutes ++ " minute"
@@ -29,11 +29,11 @@ reportAsMinutes duration =
             toString minutes ++ " minutes"
 
 
-reportAsHours : Time -> String
+reportAsHours : Time.Time -> String
 reportAsHours duration =
     let
         hours =
-            round (inHours duration)
+            round (Time.inHours duration)
     in
         if hours == 1 then
             "about an hour"
@@ -41,11 +41,11 @@ reportAsHours duration =
             "about " ++ toString hours ++ " hours"
 
 
-reportAsDays : Time -> String
+reportAsDays : Time.Time -> String
 reportAsDays duration =
     let
         days =
-            round (inHours duration / 24)
+            round (Time.inHours duration / 24)
     in
         if days == 1 then
             "1 day"
@@ -53,11 +53,11 @@ reportAsDays duration =
             toString days ++ " days"
 
 
-reportAsMonths : Time -> String
+reportAsMonths : Time.Time -> String
 reportAsMonths duration =
     let
         months =
-            round (inHours duration / (24 * 30))
+            round (Time.inHours duration / (24 * 30))
     in
         if months == 1 then
             "about 1 month"

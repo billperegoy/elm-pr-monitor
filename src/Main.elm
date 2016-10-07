@@ -4,20 +4,20 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.App as App
-import Task exposing (..)
-import Http exposing (..)
-import Time exposing (..)
-import Date exposing (..)
-import String exposing (..)
-import List exposing (..)
+import Time
+import Task
+import Http
+import Date
+import String
+import List
 
 
 --
 
-import TimeAgo exposing (..)
-import Github exposing (..)
-import Config exposing (..)
-import DateUtils exposing (..)
+import TimeAgo
+import Github
+import Config
+import DateUtils
 
 
 main : Program Never
@@ -37,7 +37,7 @@ main =
 
 
 type alias Model =
-    { currentTime : Time
+    { currentTime : Time.Time
     , pullRequests : List Github.PullRequestData
     , decayTimeFormValue : String
     , decayTimeInDays : Float
@@ -141,14 +141,14 @@ decayTimeToFloat string default =
                 default
 
 
-elapsedTimeToColor : Time -> Float -> ( String, String )
+elapsedTimeToColor : Time.Time -> Float -> ( String, String )
 elapsedTimeToColor decayTimeInDays elapsedTime =
     let
         decayTimeInSeconds =
             decayTimeInDays * 24 * 3600
 
         percentDone =
-            max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
+            max (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds) 100
 
         percentLeft =
             100.0 - percentDone
@@ -175,7 +175,7 @@ pullRequestViewElement model pullRequest =
                     [ elapsedTimeToColor model.decayTimeInDays elapsedTime
                     ]
                 ]
-                [ text (timeAgoInWords elapsedTime) ]
+                [ text (TimeAgo.timeAgoInWords elapsedTime) ]
             , td []
                 [ a
                     [ href pullRequest.htmlUrl, target "_blank" ]
@@ -184,7 +184,7 @@ pullRequestViewElement model pullRequest =
                 ]
             , td [] [ text pullRequest.head.repo.name ]
             , td [] [ text pullRequest.user.login ]
-            , td [] [ text (slice 0 63 pullRequest.body) ]
+            , td [] [ text (String.slice 0 63 pullRequest.body) ]
             ]
 
 
@@ -214,7 +214,7 @@ pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     let
         sortedPullRequests =
-            sortWith sortByCreatedAt model.pullRequests
+            List.sortWith Github.sortByCreatedAt model.pullRequests
     in
         table [ class "table" ]
             [ pullRequestTableHeader
@@ -230,7 +230,7 @@ currentTimeDisplay : Model -> Html Msg
 currentTimeDisplay model =
     let
         timeString =
-            "Current Time: " ++ toString (fromTime model.currentTime)
+            "Current Time: " ++ toString (Date.fromTime model.currentTime)
     in
         p [] [ text timeString ]
 
@@ -292,4 +292,4 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.batch [ every Time.second EverySecond ]
+    Sub.batch [ Time.every Time.second EverySecond ]
