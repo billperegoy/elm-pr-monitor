@@ -38,6 +38,7 @@ type alias Model =
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
+    , comments : List Github.PullRequestCommentData
     }
 
 
@@ -58,6 +59,7 @@ initModel =
         , decayTimeFormValue = ""
         , decayTimeInDays = 5
         , errors = Nothing
+        , comments = []
         }
             ! List.map (\repo -> getPullRequestData repo) config.repositories
 
@@ -66,6 +68,27 @@ initModel =
 --
 -- Update
 --
+
+
+urlToRepository : String -> Config.Repository
+urlToRepository url =
+    let
+        userAndRepo =
+            String.split "/" url
+                |> List.drop 3
+                |> List.take 2
+
+        user =
+            List.take 1 userAndRepo
+                |> List.head
+                |> Maybe.withDefault "error"
+
+        repo =
+            List.drop 1 userAndRepo
+                |> List.head
+                |> Maybe.withDefault "error"
+    in
+        Config.Repository user repo
 
 
 type Msg
@@ -83,14 +106,20 @@ update msg model =
     case msg of
         PullRequestDataHttpSucceed results ->
             { model | pullRequests = model.pullRequests ++ results }
-                ! []
+                ! List.map
+                    (\pullRequest ->
+                        getPullRequestCommentData
+                            (urlToRepository pullRequest.htmlUrl)
+                            pullRequest.number
+                    )
+                    results
 
         PullRequestDataHttpFail error ->
             { model | errors = Just (toString error) }
                 ! []
 
         PullRequestCommentDataHttpSucceed results ->
-            model ! []
+            { model | comments = model.comments ++ results } ! []
 
         PullRequestCommentDataHttpFail results ->
             model ! []
@@ -288,6 +317,14 @@ decayForm =
         ]
 
 
+comments : Model -> Html Msg
+comments model =
+    ul []
+        (List.filter (\e -> String.contains "👍" e.body) model.comments
+            |> List.map (\e -> li [] [ text (e.body ++ " (" ++ e.user.login ++ ")") ])
+        )
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -298,6 +335,7 @@ view model =
             , decayDisplay model.decayTimeInDays
             , decayForm
             , pullRequestTable model
+            , comments model
             ]
         ]
 

@@ -44,6 +44,6 @@ commentsUrl repository pullRequestId =
         ++ repository.user
         ++ "/"
         ++ repository.project
-        ++ "/issues/`"
+        ++ "/issues/"
         ++ toString pullRequestId
         ++ "/comments"
