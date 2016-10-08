@@ -17,7 +17,7 @@ import List
 import TimeAgo
 import Github
 import Config
-import DateUtils
+import DateTimeUtils
 
 
 main : Program Never
@@ -97,7 +97,9 @@ update msg model =
         UpdateDecayTime ->
             { model
                 | decayTimeInDays =
-                    decayTimeToFloat model.decayTimeFormValue model.decayTimeInDays
+                    DateTimeUtils.timeStringToFloat
+                        model.decayTimeFormValue
+                        model.decayTimeInDays
             }
                 ! []
 
@@ -119,26 +121,10 @@ getPullRequestData repository =
         (Http.get Github.pullRequestListDecoder (Config.pullRequestUrl repository))
 
 
-max : Float -> Float -> Float
-max val max =
-    if val > max then
-        max
-    else
-        val
 
-
-decayTimeToFloat : String -> Float -> Float
-decayTimeToFloat string default =
-    let
-        convertedValue =
-            String.toFloat string
-    in
-        case convertedValue of
-            Ok value ->
-                value
-
-            Err a ->
-                default
+--
+-- View
+---
 
 
 elapsedTimeToColor : Time.Time -> Float -> ( String, String )
@@ -148,7 +134,7 @@ elapsedTimeToColor decayTimeInDays elapsedTime =
             decayTimeInDays * 24 * 3600
 
         percentDone =
-            max (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds) 100
+            Basics.min (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds) 100
 
         percentLeft =
             100.0 - percentDone
@@ -164,10 +150,13 @@ pullRequestViewElement : Model -> Github.PullRequestData -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =
-            DateUtils.dateStringToTime pullRequest.createdAt
+            DateTimeUtils.dateStringToTime pullRequest.createdAt
 
         elapsedTime =
             model.currentTime - prTime
+
+        truncate64 str =
+            String.slice 0 63 str
     in
         tr []
             [ td
@@ -184,7 +173,7 @@ pullRequestViewElement model pullRequest =
                 ]
             , td [] [ text pullRequest.head.repo.name ]
             , td [] [ text pullRequest.user.login ]
-            , td [] [ text (String.slice 0 63 pullRequest.body) ]
+            , td [] [ text (truncate64 pullRequest.body) ]
             ]
 
 
@@ -288,6 +277,12 @@ view model =
             , pullRequestTable model
             ]
         ]
+
+
+
+--
+-- Subscriptions
+--
 
 
 subscriptions : Model -> Sub Msg

@@ -7,7 +7,7 @@ import Json.Decode.Pipeline
 
 --
 
-import DateUtils
+import DateTimeUtils
 
 
 type alias PullRequestData =
@@ -71,5 +71,5 @@ pullRequestDataDecoder =
 
 sortByCreatedAt : PullRequestData -> PullRequestData -> Order
 sortByCreatedAt a b =
-    compare (DateUtils.dateStringToTime a.createdAt)
-        (DateUtils.dateStringToTime b.createdAt)
+    compare (DateTimeUtils.dateStringToTime a.createdAt)
+        (DateTimeUtils.dateStringToTime b.createdAt)
