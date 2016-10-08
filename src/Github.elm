@@ -3,10 +3,6 @@ module Github exposing (..)
 import Http
 import Json.Decode
 import Json.Decode.Pipeline
-
-
---
-
 import DateTimeUtils
 
 

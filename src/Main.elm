@@ -10,10 +10,6 @@ import Http
 import Date
 import String
 import List
-
-
---
-
 import TimeAgo
 import Github
 import Config
@@ -134,7 +130,9 @@ elapsedTimeToColor decayTimeInDays elapsedTime =
             decayTimeInDays * 24 * 3600
 
         percentDone =
-            Basics.min (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds) 100
+            Basics.min
+                (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds)
+                100
 
         percentLeft =
             100.0 - percentDone
@@ -156,7 +154,10 @@ pullRequestViewElement model pullRequest =
             model.currentTime - prTime
 
         truncate64 str =
-            String.slice 0 63 str
+            if (String.length str) > 64 then
+                String.slice 0 63 str ++ "..."
+            else
+                str
     in
         tr []
             [ td
