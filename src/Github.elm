@@ -17,6 +17,12 @@ type alias PullRequestData =
     }
 
 
+type alias PullRequestCommentData =
+    { body : String
+    , user : UserData
+    }
+
+
 type alias HeadData =
     { repo : RepoData }
 
@@ -30,9 +36,33 @@ type alias UserData =
     }
 
 
+pullRequestCommentListDecoder : Json.Decode.Decoder (List PullRequestCommentData)
+pullRequestCommentListDecoder =
+    Json.Decode.list pullRequestCommentDecoder
+
+
+pullRequestCommentDecoder : Json.Decode.Decoder PullRequestCommentData
+pullRequestCommentDecoder =
+    Json.Decode.Pipeline.decode PullRequestCommentData
+        |> Json.Decode.Pipeline.required "body" Json.Decode.string
+        |> Json.Decode.Pipeline.required "user" userDecoder
+
+
 pullRequestListDecoder : Json.Decode.Decoder (List PullRequestData)
 pullRequestListDecoder =
     Json.Decode.list pullRequestDataDecoder
+
+
+pullRequestDataDecoder : Json.Decode.Decoder PullRequestData
+pullRequestDataDecoder =
+    Json.Decode.Pipeline.decode PullRequestData
+        |> Json.Decode.Pipeline.required "number" Json.Decode.int
+        |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "body" Json.Decode.string
+        |> Json.Decode.Pipeline.required "state" Json.Decode.string
+        |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
+        |> Json.Decode.Pipeline.required "head" headDecoder
+        |> Json.Decode.Pipeline.required "user" userDecoder
 
 
 headDecoder : Json.Decode.Decoder HeadData
@@ -51,18 +81,6 @@ repoDecoder : Json.Decode.Decoder RepoData
 repoDecoder =
     Json.Decode.Pipeline.decode RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
-
-
-pullRequestDataDecoder : Json.Decode.Decoder PullRequestData
-pullRequestDataDecoder =
-    Json.Decode.Pipeline.decode PullRequestData
-        |> Json.Decode.Pipeline.required "number" Json.Decode.int
-        |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
-        |> Json.Decode.Pipeline.required "body" Json.Decode.string
-        |> Json.Decode.Pipeline.required "state" Json.Decode.string
-        |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
-        |> Json.Decode.Pipeline.required "head" headDecoder
-        |> Json.Decode.Pipeline.required "user" userDecoder
 
 
 sortByCreatedAt : PullRequestData -> PullRequestData -> Order

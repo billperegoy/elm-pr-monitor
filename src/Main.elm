@@ -71,6 +71,8 @@ initModel =
 type Msg
     = PullRequestDataHttpFail Http.Error
     | PullRequestDataHttpSucceed (List Github.PullRequestData)
+    | PullRequestCommentDataHttpFail Http.Error
+    | PullRequestCommentDataHttpSucceed (List Github.PullRequestCommentData)
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -86,6 +88,12 @@ update msg model =
         PullRequestDataHttpFail error ->
             { model | errors = Just (toString error) }
                 ! []
+
+        PullRequestCommentDataHttpSucceed results ->
+            model ! []
+
+        PullRequestCommentDataHttpFail results ->
+            model ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -114,7 +122,21 @@ getPullRequestData repository =
     Task.perform
         PullRequestDataHttpFail
         PullRequestDataHttpSucceed
-        (Http.get Github.pullRequestListDecoder (Config.pullRequestUrl repository))
+        (Http.get
+            Github.pullRequestListDecoder
+            (Config.pullRequestUrl repository)
+        )
+
+
+getPullRequestCommentData : Config.Repository -> Int -> Cmd Msg
+getPullRequestCommentData repository pullRequestId =
+    Task.perform
+        PullRequestCommentDataHttpFail
+        PullRequestCommentDataHttpSucceed
+        (Http.get
+            Github.pullRequestCommentListDecoder
+            (Config.commentsUrl repository pullRequestId)
+        )
 
 
 
