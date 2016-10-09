@@ -35,7 +35,7 @@ main =
 
 type alias Model =
     { currentTime : Time.Time
-    , pullRequests : Dict.Dict String Github.PullRequestData
+    , pullRequests : Dict.Dict String Github.PullRequestDataWithComments
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
@@ -103,7 +103,7 @@ type Msg
     | UpdatePullRequestData Float
 
 
-pullRequestKey : Github.PullRequestData -> String
+pullRequestKey : Github.PullRequestDataWithComments -> String
 pullRequestKey pullRequest =
     let
         repo =
@@ -112,7 +112,7 @@ pullRequestKey pullRequest =
         repo.user ++ repo.project ++ toString pullRequest.number
 
 
-pullRequestListToDict : List Github.PullRequestData -> Dict.Dict String Github.PullRequestData
+pullRequestListToDict : List Github.PullRequestDataWithComments -> Dict.Dict String Github.PullRequestDataWithComments
 pullRequestListToDict pullRequests =
     let
         zippedList =
@@ -127,7 +127,7 @@ update msg model =
         PullRequestDataHttpSucceed results ->
             { model
                 | pullRequests =
-                    Dict.union (pullRequestListToDict results)
+                    Dict.union (pullRequestListToDict (List.map (\e -> Github.addComments e) results))
                         model.pullRequests
             }
                 ! List.map
@@ -227,7 +227,7 @@ elapsedTimeToColor decayTimeInDays elapsedTime =
         ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
 
 
-pullRequestViewElement : Model -> Github.PullRequestData -> Html Msg
+pullRequestViewElement : Model -> Github.PullRequestDataWithComments -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =

@@ -18,8 +18,27 @@ type alias PullRequestData =
 
 
 type alias PullRequestDataWithComments =
-    { data : PullRequestData
-    , comments : PullRequestCommentData
+    { number : Int
+    , htmlUrl : String
+    , body : String
+    , state : String
+    , createdAt : String
+    , head : HeadData
+    , user : UserData
+    , comments : List PullRequestCommentData
+    }
+
+
+addComments : PullRequestData -> PullRequestDataWithComments
+addComments elem =
+    { number = elem.number
+    , htmlUrl = elem.htmlUrl
+    , body = elem.body
+    , state = elem.state
+    , createdAt = elem.createdAt
+    , head = elem.head
+    , user = elem.user
+    , comments = []
     }
 
 
@@ -89,7 +108,7 @@ repoDecoder =
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
 
 
-sortByCreatedAt : PullRequestData -> PullRequestData -> Order
+sortByCreatedAt : PullRequestDataWithComments -> PullRequestDataWithComments -> Order
 sortByCreatedAt a b =
     compare (DateTimeUtils.dateStringToTime a.createdAt)
         (DateTimeUtils.dateStringToTime b.createdAt)
