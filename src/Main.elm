@@ -100,6 +100,7 @@ type Msg
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
+    | UpdatePullRequestData Float
 
 
 pullRequestKey : Github.PullRequestData -> String
@@ -124,7 +125,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PullRequestDataHttpSucceed results ->
-            { model | pullRequests = Dict.union model.pullRequests (pullRequestListToDict results) }
+            { model
+                | pullRequests =
+                    Dict.union (pullRequestListToDict results)
+                        model.pullRequests
+            }
                 ! List.map
                     (\pullRequest ->
                         getPullRequestCommentData
@@ -157,6 +162,14 @@ update msg model =
 
         EverySecond time ->
             { model | currentTime = time } ! []
+
+        UpdatePullRequestData _ ->
+            model
+                ! let
+                    config =
+                        Config.data
+                  in
+                    List.map (\repo -> getPullRequestData repo) config.repositories
 
 
 
@@ -368,4 +381,7 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.batch [ Time.every Time.second EverySecond ]
+    Sub.batch
+        [ Time.every Time.second EverySecond
+        , Time.every (5 * Time.minute) UpdatePullRequestData
+        ]

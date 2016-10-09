@@ -17,6 +17,12 @@ type alias PullRequestData =
     }
 
 
+type alias PullRequestDataWithComments =
+    { data : PullRequestData
+    , comments : PullRequestCommentData
+    }
+
+
 type alias PullRequestCommentData =
     { body : String
     , user : UserData
