@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.App as App
+import Dict
 import Time
 import Task
 import Http
@@ -34,7 +35,7 @@ main =
 
 type alias Model =
     { currentTime : Time.Time
-    , pullRequests : List Github.PullRequestData
+    , pullRequests : Dict.Dict String Github.PullRequestData
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
@@ -55,7 +56,7 @@ initModel =
             Config.data
     in
         { currentTime = 0.0
-        , pullRequests = []
+        , pullRequests = Dict.empty
         , decayTimeFormValue = ""
         , decayTimeInDays = 5
         , errors = Nothing
@@ -101,11 +102,29 @@ type Msg
     | EverySecond Float
 
 
+pullRequestKey : Github.PullRequestData -> String
+pullRequestKey pullRequest =
+    let
+        repo =
+            urlToRepository pullRequest.htmlUrl
+    in
+        repo.user ++ repo.project ++ toString pullRequest.number
+
+
+pullRequestListToDict : List Github.PullRequestData -> Dict.Dict String Github.PullRequestData
+pullRequestListToDict pullRequests =
+    let
+        zippedList =
+            List.map (\e -> ( pullRequestKey e, e )) pullRequests
+    in
+        Dict.fromList zippedList
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PullRequestDataHttpSucceed results ->
-            { model | pullRequests = model.pullRequests ++ results }
+            { model | pullRequests = Dict.union model.pullRequests (pullRequestListToDict results) }
                 ! List.map
                     (\pullRequest ->
                         getPullRequestCommentData
@@ -255,13 +274,14 @@ pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     let
         sortedPullRequests =
-            List.sortWith Github.sortByCreatedAt model.pullRequests
+            Dict.values model.pullRequests
+                |> List.sortWith Github.sortByCreatedAt
     in
         table [ class "table" ]
             [ pullRequestTableHeader
             , tbody []
                 (List.map
-                    (\pulRequest -> pullRequestViewElement model pulRequest)
+                    (\pullRequest -> pullRequestViewElement model pullRequest)
                     sortedPullRequests
                 )
             ]
