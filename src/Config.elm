@@ -20,7 +20,11 @@ pullRequestUrl repository =
     apiBase
         ++ "/repos/"
         ++ repository
-        ++ "/pulls?state=all"
+        ++ "/pulls"
+
+
+
+--++ "/pulls?state=all"
 
 
 commentsUrl : String -> Int -> String

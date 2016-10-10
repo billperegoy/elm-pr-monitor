@@ -119,7 +119,7 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
-addComments : Model -> List Github.PullRequestCommentData -> Model
+addComments : Model -> List Github.PullRequestCommentData -> Dict.Dict String Github.PullRequestDataWithComments
 addComments model comments =
     let
         key : Maybe String
@@ -155,14 +155,11 @@ addComments model comments =
     in
         case newPr of
             Nothing ->
-                model
+                model.pullRequests
 
             Just a ->
-                { model
-                    | pullRequests =
-                        Dict.union (Dict.singleton realKey a)
-                            model.pullRequests
-                }
+                Dict.union (Dict.singleton realKey a)
+                    model.pullRequests
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -177,21 +174,15 @@ update msg model =
                         )
                         model.pullRequests
             }
-                ! List.map
-                    (\pullRequest ->
-                        getPullRequestCommentData
-                            (urlToRepository pullRequest.htmlUrl)
-                            pullRequest.number
-                    )
-                    results
+                ! getAllPullRequestCommentData results
 
         PullRequestDataHttpFail error ->
             { model | errors = Just (toString error) }
                 ! []
 
-        PullRequestCommentDataHttpSucceed results ->
-            --{ model | comments = model.comments ++ results } ! []
-            addComments model results ! []
+        PullRequestCommentDataHttpSucceed comments ->
+            { model | pullRequests = addComments model comments }
+                ! []
 
         PullRequestCommentDataHttpFail error ->
             { model | errors = Just (toString error) } ! []
@@ -236,6 +227,17 @@ getPullRequestData repository =
             Github.pullRequestListDecoder
             (Config.pullRequestUrl repository)
         )
+
+
+getAllPullRequestCommentData : List Github.PullRequestData -> List (Cmd Msg)
+getAllPullRequestCommentData pullRequests =
+    List.map
+        (\pullRequest ->
+            getPullRequestCommentData
+                (urlToRepository pullRequest.htmlUrl)
+                pullRequest.number
+        )
+        pullRequests
 
 
 getPullRequestCommentData : String -> Int -> Cmd Msg
