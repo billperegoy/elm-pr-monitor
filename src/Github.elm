@@ -45,6 +45,7 @@ addComments elem =
 type alias PullRequestCommentData =
     { body : String
     , user : UserData
+    , issueUrl : String
     }
 
 
@@ -71,6 +72,7 @@ pullRequestCommentDecoder =
     Json.Decode.Pipeline.decode PullRequestCommentData
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "user" userDecoder
+        |> Json.Decode.Pipeline.required "issue_url" Json.Decode.string
 
 
 pullRequestListDecoder : Json.Decode.Decoder (List PullRequestData)

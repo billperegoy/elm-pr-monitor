@@ -2,22 +2,16 @@ module Config exposing (..)
 
 
 type alias Config =
-    { repositories : List Repository
-    }
-
-
-type alias Repository =
-    { user : String
-    , project : String
+    { repositories : List String
     }
 
 
 data : Config
 data =
     { repositories =
-        [ Repository "es" "contacts-core"
-        , Repository "contacts" "contacts-listpicker-ui"
-        , Repository "es" "smsjmml"
+        [ "es/contacts-core"
+        , "contacts/contacts-listpicker-ui"
+        , "es/smsjmml"
         ]
     }
 
@@ -27,23 +21,19 @@ apiBase =
     "https://github.roving.com/api/v3"
 
 
-pullRequestUrl : Repository -> String
-pullRequestUrl repo =
+pullRequestUrl : String -> String
+pullRequestUrl repository =
     apiBase
         ++ "/repos/"
-        ++ repo.user
-        ++ "/"
-        ++ repo.project
+        ++ repository
         ++ "/pulls"
 
 
-commentsUrl : Repository -> Int -> String
+commentsUrl : String -> Int -> String
 commentsUrl repository pullRequestId =
     apiBase
         ++ "/repos/"
-        ++ repository.user
-        ++ "/"
-        ++ repository.project
+        ++ repository
         ++ "/issues/"
         ++ toString pullRequestId
         ++ "/comments"

@@ -71,7 +71,7 @@ initModel =
 --
 
 
-urlToRepository : String -> Config.Repository
+urlToRepository : String -> String
 urlToRepository url =
     let
         userAndRepo =
@@ -89,7 +89,7 @@ urlToRepository url =
                 |> List.head
                 |> Maybe.withDefault "error"
     in
-        Config.Repository user repo
+        user ++ "/" ++ repo
 
 
 type Msg
@@ -109,7 +109,7 @@ pullRequestKey pullRequest =
         repo =
             urlToRepository pullRequest.htmlUrl
     in
-        repo.user ++ repo.project ++ toString pullRequest.number
+        repo ++ "/" ++ toString pullRequest.number
 
 
 pullRequestListToDict : List Github.PullRequestDataWithComments -> Dict.Dict String Github.PullRequestDataWithComments
@@ -121,13 +121,29 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
+
+-- FIXME - need to get a particular pull request and add the comments
+
+
+addComments : Model -> List Github.PullRequestCommentData -> Model
+addComments model comments =
+    let
+        x =
+            1
+    in
+        model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PullRequestDataHttpSucceed results ->
             { model
                 | pullRequests =
-                    Dict.union (pullRequestListToDict (List.map (\e -> Github.addComments e) results))
+                    Dict.union
+                        (pullRequestListToDict
+                            (List.map (\e -> Github.addComments e) results)
+                        )
                         model.pullRequests
             }
                 ! List.map
@@ -145,8 +161,8 @@ update msg model =
         PullRequestCommentDataHttpSucceed results ->
             { model | comments = model.comments ++ results } ! []
 
-        PullRequestCommentDataHttpFail results ->
-            model ! []
+        PullRequestCommentDataHttpFail error ->
+            { model | errors = Just (toString error) } ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -178,7 +194,7 @@ update msg model =
 --
 
 
-getPullRequestData : Config.Repository -> Cmd Msg
+getPullRequestData : String -> Cmd Msg
 getPullRequestData repository =
     Task.perform
         PullRequestDataHttpFail
@@ -189,7 +205,7 @@ getPullRequestData repository =
         )
 
 
-getPullRequestCommentData : Config.Repository -> Int -> Cmd Msg
+getPullRequestCommentData : String -> Int -> Cmd Msg
 getPullRequestCommentData repository pullRequestId =
     Task.perform
         PullRequestCommentDataHttpFail
