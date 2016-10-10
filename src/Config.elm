@@ -1,20 +1,13 @@
 module Config exposing (..)
 
 
-type alias Config =
-    { repositories : List String
-    }
-
-
-data : Config
-data =
-    { repositories =
-        [ "es/contacts-core"
-        , "contacts/contacts-listpicker-ui"
-        , "es/smsjmml"
-        , "es/ctct"
-        ]
-    }
+repositories : List String
+repositories =
+    [ "es/contacts-core"
+    , "contacts/contacts-listpicker-ui"
+    , "es/smsjmml"
+    , "es/ctct"
+    ]
 
 
 apiBase : String

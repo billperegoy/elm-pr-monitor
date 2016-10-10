@@ -51,17 +51,13 @@ type alias Model =
 
 initModel : ( Model, Cmd Msg )
 initModel =
-    let
-        config =
-            Config.data
-    in
-        { currentTime = 0.0
-        , pullRequests = Dict.empty
-        , decayTimeFormValue = ""
-        , decayTimeInDays = 5
-        , errors = Nothing
-        }
-            ! List.map (\repo -> getPullRequestData repo) config.repositories
+    { currentTime = 0.0
+    , pullRequests = Dict.empty
+    , decayTimeFormValue = ""
+    , decayTimeInDays = 5
+    , errors = Nothing
+    }
+        ! getAllPullRequestData Config.repositories
 
 
 
@@ -84,6 +80,14 @@ issueUrlToRepository url =
         |> List.drop 6
         |> List.take 2
         |> String.join "/"
+
+
+issueUrlToPullRequestId : String -> String
+issueUrlToPullRequestId url =
+    String.split "/" url
+        |> List.drop 9
+        |> List.head
+        |> Maybe.withDefault "error"
 
 
 type Msg
@@ -113,19 +117,6 @@ pullRequestListToDict pullRequests =
             List.map (\e -> ( pullRequestKey e, e )) pullRequests
     in
         Dict.fromList zippedList
-
-
-issueUrlToPullRequestId : String -> String
-issueUrlToPullRequestId url =
-    String.split "/" url
-        |> List.drop 9
-        |> List.head
-        |> Maybe.withDefault "error"
-
-
-
--- FIXME - need to get a particular pull request and add the comments
--- Note: Nothing indicates no comments exist
 
 
 addComments : Model -> List Github.PullRequestCommentData -> Model
@@ -161,8 +152,6 @@ addComments model comments =
 
                 Just a ->
                     Just { a | comments = List.filter (\e -> String.contains "👍" e.body) comments }
-
-        --Just { a | comments = comments }
     in
         case newPr of
             Nothing ->
@@ -224,17 +213,18 @@ update msg model =
 
         UpdatePullRequestData _ ->
             model
-                ! let
-                    config =
-                        Config.data
-                  in
-                    List.map (\repo -> getPullRequestData repo) config.repositories
+                ! getAllPullRequestData Config.repositories
 
 
 
 --
 -- Http
 --
+
+
+getAllPullRequestData : List String -> List (Cmd Msg)
+getAllPullRequestData repositories =
+    List.map (\repo -> getPullRequestData repo) repositories
 
 
 getPullRequestData : String -> Cmd Msg
