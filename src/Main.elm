@@ -40,7 +40,6 @@ type alias Model =
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
-    , comments : List Github.PullRequestCommentData
     }
 
 
@@ -61,7 +60,6 @@ initModel =
         , decayTimeFormValue = ""
         , decayTimeInDays = 5
         , errors = Nothing
-        , comments = []
         }
             ! List.map (\repo -> getPullRequestData repo) config.repositories
 
@@ -420,14 +418,6 @@ decayForm =
         ]
 
 
-comments : Model -> Html Msg
-comments model =
-    ul []
-        (List.filter (\e -> String.contains "👍" e.body) model.comments
-            |> List.map (\e -> li [] [ text (e.body ++ " (" ++ e.user.login ++ ")") ])
-        )
-
-
 view : Model -> Html Msg
 view model =
     div []
@@ -438,7 +428,6 @@ view model =
             , decayDisplay model.decayTimeInDays
             , decayForm
             , pullRequestTable model
-            , comments model
             ]
         ]
 
