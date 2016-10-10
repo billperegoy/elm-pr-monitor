@@ -12,6 +12,7 @@ data =
         [ "es/contacts-core"
         , "contacts/contacts-listpicker-ui"
         , "es/smsjmml"
+        , "es/ctct"
         ]
     }
 
@@ -26,7 +27,7 @@ pullRequestUrl repository =
     apiBase
         ++ "/repos/"
         ++ repository
-        ++ "/pulls"
+        ++ "/pulls?state=all"
 
 
 commentsUrl : String -> Int -> String

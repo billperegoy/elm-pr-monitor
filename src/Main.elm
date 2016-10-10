@@ -15,6 +15,7 @@ import TimeAgo
 import Github
 import Config
 import DateTimeUtils
+import Set
 
 
 main : Program Never
@@ -73,23 +74,18 @@ initModel =
 
 urlToRepository : String -> String
 urlToRepository url =
-    let
-        userAndRepo =
-            String.split "/" url
-                |> List.drop 3
-                |> List.take 2
+    String.split "/" url
+        |> List.drop 3
+        |> List.take 2
+        |> String.join "/"
 
-        user =
-            List.take 1 userAndRepo
-                |> List.head
-                |> Maybe.withDefault "error"
 
-        repo =
-            List.drop 1 userAndRepo
-                |> List.head
-                |> Maybe.withDefault "error"
-    in
-        user ++ "/" ++ repo
+issueUrlToRepository : String -> String
+issueUrlToRepository url =
+    String.split "/" url
+        |> List.drop 6
+        |> List.take 2
+        |> String.join "/"
 
 
 type Msg
@@ -109,7 +105,7 @@ pullRequestKey pullRequest =
         repo =
             urlToRepository pullRequest.htmlUrl
     in
-        repo ++ "/" ++ toString pullRequest.number
+        repo ++ ":" ++ toString pullRequest.number
 
 
 pullRequestListToDict : List Github.PullRequestDataWithComments -> Dict.Dict String Github.PullRequestDataWithComments
@@ -121,17 +117,65 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
+issueUrlToPullRequestId : String -> String
+issueUrlToPullRequestId url =
+    String.split "/" url
+        |> List.drop 9
+        |> List.head
+        |> Maybe.withDefault "error"
+
+
 
 -- FIXME - need to get a particular pull request and add the comments
+-- Note: Nothing indicates no comments exist
 
 
 addComments : Model -> List Github.PullRequestCommentData -> Model
 addComments model comments =
     let
-        x =
-            1
+        key : Maybe String
+        key =
+            List.map
+                (\e -> issueUrlToRepository e.issueUrl ++ ":" ++ issueUrlToPullRequestId e.issueUrl)
+                comments
+                |> Set.fromList
+                |> Set.toList
+                |> List.head
+
+        realKey : String
+        realKey =
+            Maybe.withDefault "error" key
+
+        pr : Maybe Github.PullRequestDataWithComments
+        pr =
+            case key of
+                Nothing ->
+                    Nothing
+
+                Just a ->
+                    Dict.get a model.pullRequests
+
+        newPr : Maybe Github.PullRequestDataWithComments
+        newPr =
+            case pr of
+                Nothing ->
+                    Nothing
+
+                Just a ->
+                    Just { a | comments = List.filter (\e -> String.contains "👍" e.body) comments }
+
+        --Just { a | comments = comments }
     in
-        model
+        case newPr of
+            Nothing ->
+                model
+
+            Just a ->
+                { model
+                    | pullRequests =
+                        Dict.union (Dict.singleton realKey a)
+                            model.pullRequests
+                }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -159,7 +203,8 @@ update msg model =
                 ! []
 
         PullRequestCommentDataHttpSucceed results ->
-            { model | comments = model.comments ++ results } ! []
+            --{ model | comments = model.comments ++ results } ! []
+            addComments model results ! []
 
         PullRequestCommentDataHttpFail error ->
             { model | errors = Just (toString error) } ! []
@@ -222,8 +267,8 @@ getPullRequestCommentData repository pullRequestId =
 ---
 
 
-elapsedTimeToColor : Time.Time -> Float -> ( String, String )
-elapsedTimeToColor decayTimeInDays elapsedTime =
+elapsedTimeToColor : String -> Time.Time -> Float -> ( String, String )
+elapsedTimeToColor state decayTimeInDays elapsedTime =
     let
         decayTimeInSeconds =
             decayTimeInDays * 24 * 3600
@@ -240,7 +285,10 @@ elapsedTimeToColor decayTimeInDays elapsedTime =
         lValue =
             truncate (50.0 + (percentLeft / 2))
     in
-        ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
+        if state == "open" then
+            ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
+        else
+            ( "background-color", "#65f442" )
 
 
 pullRequestViewElement : Model -> Github.PullRequestDataWithComments -> Html Msg
@@ -261,7 +309,7 @@ pullRequestViewElement model pullRequest =
         tr []
             [ td
                 [ style
-                    [ elapsedTimeToColor model.decayTimeInDays elapsedTime
+                    [ elapsedTimeToColor pullRequest.state model.decayTimeInDays elapsedTime
                     ]
                 ]
                 [ text (TimeAgo.timeAgoInWords elapsedTime) ]
@@ -274,6 +322,11 @@ pullRequestViewElement model pullRequest =
             , td [] [ text pullRequest.head.repo.name ]
             , td [] [ text pullRequest.user.login ]
             , td [] [ text (truncate64 pullRequest.body) ]
+            , td []
+                (List.map
+                    (\comment -> div [] [ text ("👍" ++ "  " ++ comment.user.login) ])
+                    pullRequest.comments
+                )
             ]
 
 
@@ -295,6 +348,7 @@ pullRequestTableHeader =
             , th [] [ text "Repository" ]
             , th [] [ text "Owner" ]
             , th [] [ text "Description" ]
+            , th [] [ text "Thumbs" ]
             ]
         ]
 
