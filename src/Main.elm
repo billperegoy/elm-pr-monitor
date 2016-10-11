@@ -34,9 +34,13 @@ main =
 --
 
 
+type alias PullRequestCollection =
+    Dict.Dict String Github.PullRequestDataWithComments
+
+
 type alias Model =
     { currentTime : Time.Time
-    , pullRequests : Dict.Dict String Github.PullRequestDataWithComments
+    , pullRequests : PullRequestCollection
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
@@ -110,7 +114,7 @@ pullRequestKey pullRequest =
         repo ++ ":" ++ toString pullRequest.number
 
 
-pullRequestListToDict : List Github.PullRequestDataWithComments -> Dict.Dict String Github.PullRequestDataWithComments
+pullRequestListToDict : List Github.PullRequestDataWithComments -> PullRequestCollection
 pullRequestListToDict pullRequests =
     let
         zippedList =
@@ -119,7 +123,7 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
-addComments : Model -> List Github.PullRequestCommentData -> Dict.Dict String Github.PullRequestDataWithComments
+addComments : Model -> List Github.PullRequestCommentData -> PullRequestCollection
 addComments model comments =
     let
         key : Maybe String
@@ -162,19 +166,23 @@ addComments model comments =
                     model.pullRequests
 
 
+updatePullRequests : PullRequestCollection -> List Github.PullRequestData -> PullRequestCollection
+updatePullRequests pullRequests newPullRequests =
+    Dict.union
+        (pullRequestListToDict
+            (List.map (\e -> Github.addComments e) newPullRequests)
+        )
+        pullRequests
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PullRequestDataHttpSucceed results ->
+        PullRequestDataHttpSucceed pullRequests ->
             { model
-                | pullRequests =
-                    Dict.union
-                        (pullRequestListToDict
-                            (List.map (\e -> Github.addComments e) results)
-                        )
-                        model.pullRequests
+                | pullRequests = updatePullRequests model.pullRequests pullRequests
             }
-                ! getAllPullRequestCommentData results
+                ! getAllPullRequestCommentData pullRequests
 
         PullRequestDataHttpFail error ->
             { model | errors = Just (toString error) }
