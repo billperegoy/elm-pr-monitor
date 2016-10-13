@@ -3,6 +3,7 @@ module Github exposing (..)
 import Http
 import Json.Decode
 import Json.Decode.Pipeline
+import String
 import DateTimeUtils
 
 
@@ -114,3 +115,27 @@ sortByCreatedAt : PullRequestDataWithComments -> PullRequestDataWithComments -> 
 sortByCreatedAt a b =
     compare (DateTimeUtils.dateStringToTime a.createdAt)
         (DateTimeUtils.dateStringToTime b.createdAt)
+
+
+urlToRepository : String -> String
+urlToRepository url =
+    String.split "/" url
+        |> List.drop 3
+        |> List.take 2
+        |> String.join "/"
+
+
+issueUrlToRepository : String -> String
+issueUrlToRepository url =
+    String.split "/" url
+        |> List.drop 6
+        |> List.take 2
+        |> String.join "/"
+
+
+issueUrlToPullRequestId : String -> String
+issueUrlToPullRequestId url =
+    String.split "/" url
+        |> List.drop 9
+        |> List.head
+        |> Maybe.withDefault "error"

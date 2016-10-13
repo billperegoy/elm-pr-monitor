@@ -10,12 +10,15 @@ import Task
 import Http
 import Date
 import String
-import List
+
+
+--
+
 import TimeAgo
 import Github
 import Config
 import DateTimeUtils
-import Set
+import ModelUpdate
 
 
 main : Program Never
@@ -34,13 +37,9 @@ main =
 --
 
 
-type alias PullRequestCollection =
-    Dict.Dict String Github.PullRequestDataWithComments
-
-
 type alias Model =
     { currentTime : Time.Time
-    , pullRequests : PullRequestCollection
+    , pullRequests : ModelUpdate.PullRequestCollection
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
@@ -70,30 +69,6 @@ initModel =
 --
 
 
-urlToRepository : String -> String
-urlToRepository url =
-    String.split "/" url
-        |> List.drop 3
-        |> List.take 2
-        |> String.join "/"
-
-
-issueUrlToRepository : String -> String
-issueUrlToRepository url =
-    String.split "/" url
-        |> List.drop 6
-        |> List.take 2
-        |> String.join "/"
-
-
-issueUrlToPullRequestId : String -> String
-issueUrlToPullRequestId url =
-    String.split "/" url
-        |> List.drop 9
-        |> List.head
-        |> Maybe.withDefault "error"
-
-
 type Msg
     = PullRequestDataHttpFail Http.Error
     | PullRequestDataHttpSucceed (List Github.PullRequestData)
@@ -105,95 +80,24 @@ type Msg
     | UpdatePullRequestData Float
 
 
-pullRequestKey : Github.PullRequestDataWithComments -> String
-pullRequestKey pullRequest =
-    let
-        repo =
-            urlToRepository pullRequest.htmlUrl
-    in
-        repo ++ ":" ++ toString pullRequest.number
-
-
-pullRequestListToDict : List Github.PullRequestDataWithComments -> PullRequestCollection
-pullRequestListToDict pullRequests =
-    let
-        zippedList =
-            List.map (\e -> ( pullRequestKey e, e )) pullRequests
-    in
-        Dict.fromList zippedList
-
-
-addComments : Model -> List Github.PullRequestCommentData -> PullRequestCollection
-addComments model comments =
-    let
-        key : Maybe String
-        key =
-            List.map
-                (\e -> issueUrlToRepository e.issueUrl ++ ":" ++ issueUrlToPullRequestId e.issueUrl)
-                comments
-                |> Set.fromList
-                |> Set.toList
-                |> List.head
-
-        realKey : String
-        realKey =
-            Maybe.withDefault "error" key
-
-        pr : Maybe Github.PullRequestDataWithComments
-        pr =
-            case key of
-                Nothing ->
-                    Nothing
-
-                Just a ->
-                    Dict.get a model.pullRequests
-
-        newPr : Maybe Github.PullRequestDataWithComments
-        newPr =
-            case pr of
-                Nothing ->
-                    Nothing
-
-                Just a ->
-                    Just { a | comments = List.filter (\e -> String.contains "👍" e.body) comments }
-    in
-        case newPr of
-            Nothing ->
-                model.pullRequests
-
-            Just a ->
-                Dict.union (Dict.singleton realKey a)
-                    model.pullRequests
-
-
-updatePullRequests : PullRequestCollection -> List Github.PullRequestData -> PullRequestCollection
-updatePullRequests pullRequests newPullRequests =
-    Dict.union
-        (pullRequestListToDict
-            (List.map (\e -> Github.addComments e) newPullRequests)
-        )
-        pullRequests
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PullRequestDataHttpSucceed pullRequests ->
+        PullRequestDataHttpSucceed newPullRequests ->
             { model
                 | pullRequests =
-                    updatePullRequests model.pullRequests
-                        pullRequests
+                    ModelUpdate.updatePullRequests model.pullRequests
+                        newPullRequests
                 , errors = Nothing
             }
-                ! getAllPullRequestCommentData pullRequests
+                ! getAllPullRequestCommentData newPullRequests
 
         PullRequestDataHttpFail error ->
-            { model | errors = Just (toString error) }
-                ! []
+            { model | errors = Just (toString error) } ! []
 
         PullRequestCommentDataHttpSucceed comments ->
             { model
-                | pullRequests = addComments model comments
+                | pullRequests = ModelUpdate.addComments model.pullRequests comments
                 , errors = Nothing
             }
                 ! []
@@ -248,7 +152,7 @@ getAllPullRequestCommentData pullRequests =
     List.map
         (\pullRequest ->
             getPullRequestCommentData
-                (urlToRepository pullRequest.htmlUrl)
+                (Github.urlToRepository pullRequest.htmlUrl)
                 pullRequest.number
         )
         pullRequests
