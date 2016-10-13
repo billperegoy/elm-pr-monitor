@@ -180,7 +180,10 @@ update msg model =
     case msg of
         PullRequestDataHttpSucceed pullRequests ->
             { model
-                | pullRequests = updatePullRequests model.pullRequests pullRequests
+                | pullRequests =
+                    updatePullRequests model.pullRequests
+                        pullRequests
+                , errors = Nothing
             }
                 ! getAllPullRequestCommentData pullRequests
 
@@ -189,7 +192,10 @@ update msg model =
                 ! []
 
         PullRequestCommentDataHttpSucceed comments ->
-            { model | pullRequests = addComments model comments }
+            { model
+                | pullRequests = addComments model comments
+                , errors = Nothing
+            }
                 ! []
 
         PullRequestCommentDataHttpFail error ->
