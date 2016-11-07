@@ -233,7 +233,7 @@ pullRequestViewElement model pullRequest =
             , td []
                 (List.map
                     (\comment -> div [] [ text ("👍" ++ "  " ++ comment.user.login) ])
-                    pullRequest.comments
+                    (Debug.log "Comments: " pullRequest.comments)
                 )
             ]
 

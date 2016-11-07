@@ -65,7 +65,16 @@ addComments pullRequests comments =
                     Nothing
 
                 Just a ->
-                    Just { a | comments = List.filter (\e -> String.contains "👍" e.body) comments }
+                    Just
+                        { a
+                            | comments =
+                                List.filter
+                                    (\e ->
+                                        (String.contains "👍" e.body)
+                                            || (String.contains ":+1" e.body)
+                                    )
+                                    comments
+                        }
     in
         case newPr of
             Nothing ->
