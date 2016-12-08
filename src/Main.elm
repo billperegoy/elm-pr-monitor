@@ -3,48 +3,31 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Html.App as App
-import Task exposing (..)
-import Http exposing (..)
-import Json.Decode exposing (int, string, float, Decoder)
-import Json.Decode exposing (..)
-import Json.Decode.Pipeline exposing (..)
-import Time exposing (..)
-import Date exposing (..)
-import String exposing (..)
+import Dict
+import Time
+import Task
+import Http
+import Date
+import String
 
 
-main : Program Never
+--
+
+import TimeAgo
+import Github
+import Config
+import DateTimeUtils
+import ModelUpdate
+
+
+main : Program Never Model Msg
 main =
-    App.program
-        { init = init
+    Html.program
+        { init = initModel
         , view = view
         , update = update
         , subscriptions = subscriptions
         }
-
-
-
---
--- Config
---
-
-
-type alias Config =
-    { repositories : List Repository
-    }
-
-
-config : Config
-config =
-    { repositories =
-        [ --  Repository "rtfeldman" "node-elm-compiler"
-          --, Repository "rtfeldman" "elm-css"
-          --, Repository "rtfeldman" "elm-webpack-loader"
-          --, Repository "billperegoy" "elm-components"
-          Repository "billperegoy" "elm-pr-monitor"
-        ]
-    }
 
 
 
@@ -54,34 +37,11 @@ config =
 
 
 type alias Model =
-    { currentTime : Time
-    , pullRequests : List PullRequestData
+    { currentTime : Time.Time
+    , pullRequests : ModelUpdate.PullRequestCollection
     , decayTimeFormValue : String
     , decayTimeInDays : Float
     , errors : Maybe String
-    }
-
-
-type alias PullRequestData =
-    { number : Int
-    , body : String
-    , state : String
-    , created_at : String
-    , head : HeadData
-    }
-
-
-type alias HeadData =
-    { repo : RepoData }
-
-
-type alias RepoData =
-    { name : String }
-
-
-type alias Repository =
-    { user : String
-    , project : String
     }
 
 
@@ -91,84 +51,15 @@ type alias Repository =
 --
 
 
-init : ( Model, Cmd Msg )
-init =
+initModel : ( Model, Cmd Msg )
+initModel =
     { currentTime = 0.0
-    , pullRequests = []
+    , pullRequests = Dict.empty
     , decayTimeFormValue = ""
-    , decayTimeInDays = 1
+    , decayTimeInDays = 5
     , errors = Nothing
     }
-        ! List.map (\repo -> getPullRequestData repo) config.repositories
-
-
-
---
--- Http
---
-
-
-apiBase : String
-apiBase =
-    --"https://github.roving.com/api/v3/users/es/repos"
-    "https://api.github.com"
-
-
-pullRequestUrl : Repository -> String
-pullRequestUrl repo =
-    apiBase
-        ++ "/repos/"
-        ++ repo.user
-        ++ "/"
-        ++ repo.project
-        ++ "/pulls"
-
-
-commentsUrl : Repository -> Int -> String
-commentsUrl repository pullRequestId =
-    apiBase
-        ++ "/repos/"
-        ++ repository.user
-        ++ "/"
-        ++ repository.project
-        ++ "/issues/`"
-        ++ toString pullRequestId
-        ++ "/comments"
-
-
-pullRequestListDecoder : Decoder (List PullRequestData)
-pullRequestListDecoder =
-    Json.Decode.list pullRequestDataDecoder
-
-
-headDecoder : Decoder HeadData
-headDecoder =
-    decode HeadData
-        |> Json.Decode.Pipeline.required "repo" repoDecoder
-
-
-repoDecoder : Decoder RepoData
-repoDecoder =
-    decode RepoData
-        |> Json.Decode.Pipeline.required "name" Json.Decode.string
-
-
-pullRequestDataDecoder : Decoder PullRequestData
-pullRequestDataDecoder =
-    decode PullRequestData
-        |> Json.Decode.Pipeline.required "number" Json.Decode.int
-        |> Json.Decode.Pipeline.required "body" Json.Decode.string
-        |> Json.Decode.Pipeline.required "state" Json.Decode.string
-        |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
-        |> Json.Decode.Pipeline.required "head" headDecoder
-
-
-getPullRequestData : Repository -> Cmd Msg
-getPullRequestData repository =
-    Task.perform
-        PullRequestDataHttpFail
-        PullRequestDataHttpSucceed
-        (Http.get pullRequestListDecoder (pullRequestUrl repository))
+        ! getAllPullRequestData Config.repositories
 
 
 
@@ -177,38 +68,41 @@ getPullRequestData repository =
 --
 
 
-decayTimeToFloat : String -> Float -> Float
-decayTimeToFloat string default =
-    let
-        convertedValue =
-            String.toFloat string
-    in
-        case convertedValue of
-            Ok value ->
-                value
-
-            Err a ->
-                default
-
-
 type Msg
-    = PullRequestDataHttpFail Http.Error
-    | PullRequestDataHttpSucceed (List PullRequestData)
+    = PullRequestData (Result Http.Error (List Github.PullRequestData))
+    | PullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
+    | UpdatePullRequestData Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PullRequestDataHttpSucceed results ->
-            { model | pullRequests = model.pullRequests ++ results }
-                ! []
+        PullRequestData result ->
+          case result of
+            Ok newPullRequests ->
+            { model
+                | pullRequests =
+                    ModelUpdate.updatePullRequests model.pullRequests
+                        newPullRequests
+                , errors = Nothing
+            }
+                ! getAllPullRequestCommentData newPullRequests
+            Err error ->
+            { model | errors = Just (toString error) } ! []
 
-        PullRequestDataHttpFail error ->
-            { model | errors = Just (toString error) }
-                ! []
+        PullRequestCommentData result ->
+          case result of
+            Ok comments ->
+               { model
+                | pullRequests = ModelUpdate.addComments model.pullRequests comments
+                , errors = Nothing
+            } ! []
+            Err error ->
+              { model | errors = Just (toString error) } ! []
+
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -216,30 +110,76 @@ update msg model =
         UpdateDecayTime ->
             { model
                 | decayTimeInDays =
-                    decayTimeToFloat model.decayTimeFormValue model.decayTimeInDays
+                    DateTimeUtils.timeStringToFloat
+                        model.decayTimeFormValue
+                        model.decayTimeInDays
             }
                 ! []
 
         EverySecond time ->
             { model | currentTime = time } ! []
 
-
-max : Float -> Float -> Float
-max val max =
-    if val > max then
-        max
-    else
-        val
+        UpdatePullRequestData _ ->
+            model
+                ! getAllPullRequestData Config.repositories
 
 
-elapsedTimeToColor : Model -> Float -> ( String, String )
-elapsedTimeToColor model elapsedTime =
+
+--
+-- Http
+--
+
+
+getAllPullRequestData : List String -> List (Cmd Msg)
+getAllPullRequestData repositories =
+    List.map (\repo -> getPullRequestData repo) repositories
+
+
+getPullRequestData : String -> Cmd Msg
+getPullRequestData repository =
+  let
+    url = Config.pullRequestUrl repository
+  in
+    Http.send PullRequestData 
+            (Http.get url Github.pullRequestListDecoder)
+
+
+getAllPullRequestCommentData : List Github.PullRequestData -> List (Cmd Msg)
+getAllPullRequestCommentData pullRequests =
+    List.map
+        (\pullRequest ->
+            getPullRequestCommentData
+                (Github.urlToRepository pullRequest.htmlUrl)
+                pullRequest.number
+        )
+        pullRequests
+
+
+getPullRequestCommentData : String -> Int -> Cmd Msg
+getPullRequestCommentData repository pullRequestId =
+  let
+    url = Config.commentsUrl repository pullRequestId
+  in
+    Http.send PullRequestCommentData 
+            (Http.get url Github.pullRequestCommentListDecoder)
+
+
+
+--
+-- View
+---
+
+
+elapsedTimeToColor : String -> Time.Time -> Float -> ( String, String )
+elapsedTimeToColor state decayTimeInDays elapsedTime =
     let
         decayTimeInSeconds =
-            model.decayTimeInDays * 24 * 3600
+            decayTimeInDays * 24 * 3600
 
         percentDone =
-            max (100 * (inSeconds elapsedTime) / decayTimeInSeconds) 100
+            Basics.min
+                (100 * (Time.inSeconds elapsedTime) / decayTimeInSeconds)
+                100
 
         percentLeft =
             100.0 - percentDone
@@ -248,26 +188,48 @@ elapsedTimeToColor model elapsedTime =
         lValue =
             truncate (50.0 + (percentLeft / 2))
     in
-        ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
+        if state == "open" then
+            ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
+        else
+            ( "background-color", "#65f442" )
 
 
-repoViewElement : Model -> PullRequestData -> Html Msg
-repoViewElement model repository =
+pullRequestViewElement : Model -> Github.PullRequestDataWithComments -> Html Msg
+pullRequestViewElement model pullRequest =
     let
         prTime =
-            dateStringToTime repository.created_at
+            DateTimeUtils.dateStringToTime pullRequest.createdAt
 
         elapsedTime =
             model.currentTime - prTime
+
+        truncate64 str =
+            if (String.length str) > 64 then
+                String.slice 0 63 str ++ "..."
+            else
+                str
     in
         tr []
             [ td
-                [ style [ elapsedTimeToColor model elapsedTime ] ]
-                [ text repository.state ]
-            , td [] [ text repository.head.repo.name ]
-            , td [] [ text (toString repository.number) ]
-            , td [] [ text repository.body ]
-            , td [] [ text repository.created_at ]
+                [ style
+                    [ elapsedTimeToColor pullRequest.state model.decayTimeInDays elapsedTime
+                    ]
+                ]
+                [ text (TimeAgo.timeAgoInWords elapsedTime) ]
+            , td []
+                [ a
+                    [ href pullRequest.htmlUrl, target "_blank" ]
+                    [ text (toString pullRequest.number)
+                    ]
+                ]
+            , td [] [ text pullRequest.head.repo.name ]
+            , td [] [ text pullRequest.user.login ]
+            , td [] [ text (truncate64 pullRequest.body) ]
+            , td []
+                (List.map
+                    (\comment -> div [] [ text ("👍" ++ "  " ++ comment.user.login) ])
+                    (Debug.log "Comments: " pullRequest.comments)
+                )
             ]
 
 
@@ -284,43 +246,38 @@ pullRequestTableHeader : Html Msg
 pullRequestTableHeader =
     thead []
         [ tr []
-            [ td [] [ text "State" ]
-            , td [] [ text "Repo" ]
-            , td [] [ text "PR#" ]
-            , td [] [ text "Description" ]
-            , td [] [ text "Date" ]
+            [ th [] [ text "Age" ]
+            , th [] [ text "PR#" ]
+            , th [] [ text "Repository" ]
+            , th [] [ text "Owner" ]
+            , th [] [ text "Description" ]
+            , th [] [ text "Thumbs" ]
             ]
         ]
 
 
 pullRequestTable : Model -> Html Msg
 pullRequestTable model =
-    table [ class "table" ]
-        [ pullRequestTableHeader
-        , tbody []
-            (List.map (\e -> repoViewElement model e) model.pullRequests)
-        ]
-
-
-dateStringToTime : String -> Time
-dateStringToTime dateString =
     let
-        dateResult =
-            Date.fromString dateString
+        sortedPullRequests =
+            Dict.values model.pullRequests
+                |> List.sortWith Github.sortByCreatedAt
     in
-        case dateResult of
-            Ok value ->
-                toTime value
+        table [ class "table" ]
+            [ pullRequestTableHeader
+            , tbody []
+                (List.map
+                    (\pullRequest -> pullRequestViewElement model pullRequest)
+                    sortedPullRequests
+                )
+            ]
 
-            Err _ ->
-                0.0
 
-
-currentTime : Model -> Html Msg
-currentTime model =
+currentTimeDisplay : Model -> Html Msg
+currentTimeDisplay model =
     let
         timeString =
-            "Current Time: " ++ toString (fromTime model.currentTime)
+            "Current Time: " ++ toString (Date.fromTime model.currentTime)
     in
         p [] [ text timeString ]
 
@@ -358,7 +315,7 @@ decayForm =
             ]
             []
         , button
-            [ type' "submit"
+            [ type_ "submit"
             , class "btn btn-primary"
             , onClick UpdateDecayTime
             ]
@@ -372,7 +329,7 @@ view model =
         [ pageHeader
         , div [ class "container" ]
             [ errors model
-            , currentTime model
+            , currentTimeDisplay model
             , decayDisplay model.decayTimeInDays
             , decayForm
             , pullRequestTable model
@@ -380,6 +337,15 @@ view model =
         ]
 
 
+
+--
+-- Subscriptions
+--
+
+
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch [ every Time.second EverySecond ]
+subscriptions _ =
+    Sub.batch
+        [ Time.every Time.second EverySecond
+        , Time.every (5 * Time.minute) UpdatePullRequestData
+        ]
