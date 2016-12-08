@@ -69,8 +69,8 @@ initModel =
 
 
 type Msg
-    = PullRequestData (Result Http.Error (List Github.PullRequestData))
-    | PullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
+    = GetPullRequestData (Result Http.Error (List Github.PullRequestData))
+    | GetPullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -80,20 +80,19 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PullRequestData result ->
+        GetPullRequestData result ->
           case result of
             Ok newPullRequests ->
             { model
                 | pullRequests =
-                    ModelUpdate.updatePullRequests model.pullRequests
-                        newPullRequests
+                    ModelUpdate.updatePullRequests model.pullRequests newPullRequests
                 , errors = Nothing
             }
                 ! getAllPullRequestCommentData newPullRequests
             Err error ->
             { model | errors = Just (toString error) } ! []
 
-        PullRequestCommentData result ->
+        GetPullRequestCommentData result ->
           case result of
             Ok comments ->
                { model
@@ -140,7 +139,7 @@ getPullRequestData repository =
   let
     url = Config.pullRequestUrl repository
   in
-    Http.send PullRequestData 
+    Http.send GetPullRequestData 
             (Http.get url Github.pullRequestListDecoder)
 
 
@@ -160,7 +159,7 @@ getPullRequestCommentData repository pullRequestId =
   let
     url = Config.commentsUrl repository pullRequestId
   in
-    Http.send PullRequestCommentData 
+    Http.send GetPullRequestCommentData 
             (Http.get url Github.pullRequestCommentListDecoder)
 
 
@@ -224,7 +223,7 @@ pullRequestViewElement model pullRequest =
                 ]
             , td [] [ text pullRequest.head.repo.name ]
             , td [] [ text pullRequest.user.login ]
-            , td [] [ text (truncate64 pullRequest.body) ]
+            , td [] [ text (truncate64 pullRequest.title) ]
             , td []
                 (List.map
                     (\comment -> div [] [ text ("👍" ++ "  " ++ comment.user.login) ])

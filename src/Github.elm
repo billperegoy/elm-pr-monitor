@@ -10,6 +10,7 @@ import DateTimeUtils
 type alias PullRequestData =
     { number : Int
     , htmlUrl : String
+    , title : String
     , body : String
     , state : String
     , createdAt : String
@@ -21,6 +22,7 @@ type alias PullRequestData =
 type alias PullRequestDataWithComments =
     { number : Int
     , htmlUrl : String
+    , title : String
     , body : String
     , state : String
     , createdAt : String
@@ -34,6 +36,7 @@ addComments : PullRequestData -> PullRequestDataWithComments
 addComments elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
+    , title = elem.title
     , body = elem.body
     , state = elem.state
     , createdAt = elem.createdAt
@@ -86,6 +89,7 @@ pullRequestDataDecoder =
     Json.Decode.Pipeline.decode PullRequestData
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "title" Json.Decode.string
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "state" Json.Decode.string
         |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
