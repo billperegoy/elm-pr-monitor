@@ -3,7 +3,6 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Html.App as App
 import Dict
 import Time
 import Task
@@ -21,9 +20,9 @@ import DateTimeUtils
 import ModelUpdate
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    App.program
+    Html.program
         { init = initModel
         , view = view
         , update = update
@@ -70,10 +69,8 @@ initModel =
 
 
 type Msg
-    = PullRequestDataHttpFail Http.Error
-    | PullRequestDataHttpSucceed (List Github.PullRequestData)
-    | PullRequestCommentDataHttpFail Http.Error
-    | PullRequestCommentDataHttpSucceed (List Github.PullRequestCommentData)
+    = PullRequestData (Result Http.Error (List Github.PullRequestData))
+    | PullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -83,7 +80,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PullRequestDataHttpSucceed newPullRequests ->
+        PullRequestData result ->
+          case result of
+            Ok newPullRequests ->
             { model
                 | pullRequests =
                     ModelUpdate.updatePullRequests model.pullRequests
@@ -91,19 +90,19 @@ update msg model =
                 , errors = Nothing
             }
                 ! getAllPullRequestCommentData newPullRequests
-
-        PullRequestDataHttpFail error ->
+            Err error ->
             { model | errors = Just (toString error) } ! []
 
-        PullRequestCommentDataHttpSucceed comments ->
-            { model
+        PullRequestCommentData result ->
+          case result of
+            Ok comments ->
+               { model
                 | pullRequests = ModelUpdate.addComments model.pullRequests comments
                 , errors = Nothing
-            }
-                ! []
+            } ! []
+            Err error ->
+              { model | errors = Just (toString error) } ! []
 
-        PullRequestCommentDataHttpFail error ->
-            { model | errors = Just (toString error) } ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -138,13 +137,11 @@ getAllPullRequestData repositories =
 
 getPullRequestData : String -> Cmd Msg
 getPullRequestData repository =
-    Task.perform
-        PullRequestDataHttpFail
-        PullRequestDataHttpSucceed
-        (Http.get
-            Github.pullRequestListDecoder
-            (Config.pullRequestUrl repository)
-        )
+  let
+    url = Config.pullRequestUrl repository
+  in
+    Http.send PullRequestData 
+            (Http.get url Github.pullRequestListDecoder)
 
 
 getAllPullRequestCommentData : List Github.PullRequestData -> List (Cmd Msg)
@@ -160,13 +157,11 @@ getAllPullRequestCommentData pullRequests =
 
 getPullRequestCommentData : String -> Int -> Cmd Msg
 getPullRequestCommentData repository pullRequestId =
-    Task.perform
-        PullRequestCommentDataHttpFail
-        PullRequestCommentDataHttpSucceed
-        (Http.get
-            Github.pullRequestCommentListDecoder
-            (Config.commentsUrl repository pullRequestId)
-        )
+  let
+    url = Config.commentsUrl repository pullRequestId
+  in
+    Http.send PullRequestCommentData 
+            (Http.get url Github.pullRequestCommentListDecoder)
 
 
 
@@ -320,7 +315,7 @@ decayForm =
             ]
             []
         , button
-            [ type' "submit"
+            [ type_ "submit"
             , class "btn btn-primary"
             , onClick UpdateDecayTime
             ]
