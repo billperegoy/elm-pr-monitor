@@ -46,6 +46,24 @@ addComments elem =
     }
 
 
+type alias PullRequestLabel =
+    { name : String
+    , color : String
+    }
+
+
+pullRequestLabelListDecoder : Json.Decode.Decoder (List PullRequestLabel)
+pullRequestLabelListDecoder =
+    Json.Decode.list pullRequestLabelDecoder
+
+
+pullRequestLabelDecoder : Json.Decode.Decoder PullRequestLabel
+pullRequestLabelDecoder =
+    Json.Decode.Pipeline.decode PullRequestLabel
+        |> Json.Decode.Pipeline.required "name" Json.Decode.string
+        |> Json.Decode.Pipeline.required "color" Json.Decode.string
+
+
 type alias PullRequestCommentData =
     { body : String
     , user : UserData

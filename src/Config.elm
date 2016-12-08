@@ -24,7 +24,6 @@ pullRequestUrl repository =
 
 
 
---++ "/pulls?state=all"
 -- These are pull request comments
 
 
@@ -38,15 +37,11 @@ commentsUrl repository pullRequestId =
         ++ "/comments"
 
 
-
--- These are code comments
-
-
-issuesUrl : String -> Int -> String
-issuesUrl repository pullRequestId =
+labelsUrl : String -> Int -> String
+labelsUrl repository pullRequestId =
     apiBase
         ++ "/repos/"
         ++ repository
-        ++ "/pulls/"
+        ++ "/issues/"
         ++ toString pullRequestId
-        ++ "/comments"
+        ++ "/labels"

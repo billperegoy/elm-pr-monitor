@@ -81,27 +81,29 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetPullRequestData result ->
-          case result of
-            Ok newPullRequests ->
-            { model
-                | pullRequests =
-                    ModelUpdate.updatePullRequests model.pullRequests newPullRequests
-                , errors = Nothing
-            }
-                ! getAllPullRequestCommentData newPullRequests
-            Err error ->
-            { model | errors = Just (toString error) } ! []
+            case result of
+                Ok newPullRequests ->
+                    { model
+                        | pullRequests =
+                            ModelUpdate.updatePullRequests model.pullRequests newPullRequests
+                        , errors = Nothing
+                    }
+                        ! getAllPullRequestCommentData newPullRequests
+
+                Err error ->
+                    { model | errors = Just (toString error) } ! []
 
         GetPullRequestCommentData result ->
-          case result of
-            Ok comments ->
-               { model
-                | pullRequests = ModelUpdate.addComments model.pullRequests comments
-                , errors = Nothing
-            } ! []
-            Err error ->
-              { model | errors = Just (toString error) } ! []
+            case result of
+                Ok comments ->
+                    { model
+                        | pullRequests = ModelUpdate.addComments model.pullRequests comments
+                        , errors = Nothing
+                    }
+                        ! []
 
+                Err error ->
+                    { model | errors = Just (toString error) } ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -136,10 +138,11 @@ getAllPullRequestData repositories =
 
 getPullRequestData : String -> Cmd Msg
 getPullRequestData repository =
-  let
-    url = Config.pullRequestUrl repository
-  in
-    Http.send GetPullRequestData 
+    let
+        url =
+            Config.pullRequestUrl repository
+    in
+        Http.send GetPullRequestData
             (Http.get url Github.pullRequestListDecoder)
 
 
@@ -156,10 +159,11 @@ getAllPullRequestCommentData pullRequests =
 
 getPullRequestCommentData : String -> Int -> Cmd Msg
 getPullRequestCommentData repository pullRequestId =
-  let
-    url = Config.commentsUrl repository pullRequestId
-  in
-    Http.send GetPullRequestCommentData 
+    let
+        url =
+            Config.commentsUrl repository pullRequestId
+    in
+        Http.send GetPullRequestCommentData
             (Http.get url Github.pullRequestCommentListDecoder)
 
 
