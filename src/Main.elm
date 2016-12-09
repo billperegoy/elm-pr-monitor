@@ -71,6 +71,7 @@ initModel =
 type Msg
     = GetPullRequestData (Result Http.Error (List Github.PullRequestData))
     | GetPullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
+    | GetPullRequestLabelData (Result Http.Error (List Github.PullRequestLabel))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -88,7 +89,9 @@ update msg model =
                             ModelUpdate.updatePullRequests model.pullRequests newPullRequests
                         , errors = Nothing
                     }
-                        ! getAllPullRequestCommentData newPullRequests
+                        ! (getAllPullRequestCommentData newPullRequests
+                            ++ getAllPullRequestLabelData newPullRequests
+                          )
 
                 Err error ->
                     { model | errors = Just (toString error) } ! []
@@ -98,6 +101,18 @@ update msg model =
                 Ok comments ->
                     { model
                         | pullRequests = ModelUpdate.addComments model.pullRequests comments
+                        , errors = Nothing
+                    }
+                        ! []
+
+                Err error ->
+                    { model | errors = Just (toString error) } ! []
+
+        GetPullRequestLabelData result ->
+            case result of
+                Ok labels ->
+                    { model
+                        | pullRequests = ModelUpdate.addLabels model.pullRequests labels
                         , errors = Nothing
                     }
                         ! []
@@ -167,6 +182,27 @@ getPullRequestCommentData repository pullRequestId =
             (Http.get url Github.pullRequestCommentListDecoder)
 
 
+getAllPullRequestLabelData : List Github.PullRequestData -> List (Cmd Msg)
+getAllPullRequestLabelData pullRequests =
+    List.map
+        (\pullRequest ->
+            getPullRequestLabelData
+                (Github.urlToRepository pullRequest.htmlUrl)
+                pullRequest.number
+        )
+        pullRequests
+
+
+getPullRequestLabelData : String -> Int -> Cmd Msg
+getPullRequestLabelData repository pullRequestId =
+    let
+        url =
+            Config.labelsUrl repository pullRequestId
+    in
+        Http.send GetPullRequestLabelData
+            (Http.get url Github.pullRequestLabelListDecoder)
+
+
 
 --
 -- View
@@ -231,9 +267,26 @@ pullRequestViewElement model pullRequest =
             , td []
                 (List.map
                     (\comment -> div [] [ text ("👍" ++ "  " ++ comment.user.login) ])
-                    (Debug.log "Comments: " pullRequest.comments)
+                    pullRequest.comments
                 )
+            , td [] (labelList pullRequest.labels)
             ]
+
+
+labelList : List Github.PullRequestLabel -> List (Html Msg)
+labelList labels =
+    List.map
+        (\label ->
+            div
+                [ style
+                    [ ( "background-color", label.color )
+                    , ( "display", "block" )
+                    ]
+                , class "label label-primary"
+                ]
+                [ text label.name ]
+        )
+        labels
 
 
 pageHeader : Html Msg
@@ -255,6 +308,7 @@ pullRequestTableHeader =
             , th [] [ text "Owner" ]
             , th [] [ text "Description" ]
             , th [] [ text "Thumbs" ]
+            , th [] [ text "Labels" ]
             ]
         ]
 

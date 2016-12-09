@@ -33,6 +33,15 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
+
+-- FIXME - does nothing yet
+
+
+addLabels : PullRequestCollection -> List Github.PullRequestLabel -> PullRequestCollection
+addLabels pullRequests labels =
+    pullRequests
+
+
 addComments : PullRequestCollection -> List Github.PullRequestCommentData -> PullRequestCollection
 addComments pullRequests comments =
     let

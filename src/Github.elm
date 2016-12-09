@@ -29,6 +29,7 @@ type alias PullRequestDataWithComments =
     , head : HeadData
     , user : UserData
     , comments : List PullRequestCommentData
+    , labels : List PullRequestLabel
     }
 
 
@@ -42,7 +43,13 @@ addComments elem =
     , createdAt = elem.createdAt
     , head = elem.head
     , user = elem.user
-    , comments = []
+    , comments =
+        []
+        -- FIXME - make dynamic
+    , labels =
+        [ PullRequestLabel "Needs Thumbs" "5319e7"
+        , PullRequestLabel "Ready for Merge" "0e8a16"
+        ]
     }
 
 
