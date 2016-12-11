@@ -37,35 +37,46 @@ pullRequestListToDict pullRequests =
 -- FIXME - does nothing yet
 
 
-addLabels : PullRequestCollection -> List Github.PullRequestLabel -> PullRequestCollection
-addLabels pullRequests labels =
-    pullRequests
+addLabels : PullRequestCollection -> List Github.IssuesData -> PullRequestCollection
+addLabels pullRequests issues =
+    let
+        key : String
+        key =
+            issues
+                |> List.map
+                    (\e ->
+                        Github.issueUrlToRepository e.url
+                            ++ ":"
+                            ++ Github.issueUrlToPullRequestId e.url
+                    )
+                |> List.head
+                |> Maybe.withDefault "error"
+
+        pr : Maybe Github.PullRequestDataWithComments
+        pr =
+            Dict.get key pullRequests
+    in
+        pullRequests
 
 
 addComments : PullRequestCollection -> List Github.PullRequestCommentData -> PullRequestCollection
 addComments pullRequests comments =
     let
-        key : Maybe String
+        key : String
         key =
-            List.map
-                (\e -> Github.issueUrlToRepository e.issueUrl ++ ":" ++ Github.issueUrlToPullRequestId e.issueUrl)
-                comments
-                |> Set.fromList
-                |> Set.toList
+            comments
+                |> List.map
+                    (\e ->
+                        Github.issueUrlToRepository e.issueUrl
+                            ++ ":"
+                            ++ Github.issueUrlToPullRequestId e.issueUrl
+                    )
                 |> List.head
-
-        realKey : String
-        realKey =
-            Maybe.withDefault "error" key
+                |> Maybe.withDefault "error"
 
         pr : Maybe Github.PullRequestDataWithComments
         pr =
-            case key of
-                Nothing ->
-                    Nothing
-
-                Just a ->
-                    Dict.get a pullRequests
+            Dict.get key pullRequests
 
         newPr : Maybe Github.PullRequestDataWithComments
         newPr =
@@ -90,14 +101,15 @@ addComments pullRequests comments =
                 pullRequests
 
             Just a ->
-                Dict.union (Dict.singleton realKey a)
+                Dict.union (Dict.singleton key a)
                     pullRequests
 
 
 updatePullRequests : PullRequestCollection -> List Github.PullRequestData -> PullRequestCollection
 updatePullRequests pullRequests newPullRequests =
     Dict.union
-        (pullRequestListToDict
-            (List.map (\e -> Github.addComments e) newPullRequests)
+        (newPullRequests
+            |> List.map (\e -> Github.addComments e)
+            |> pullRequestListToDict
         )
         pullRequests

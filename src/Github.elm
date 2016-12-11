@@ -8,7 +8,8 @@ import DateTimeUtils
 
 
 type alias IssuesData =
-    { number : Int
+    { url : String
+    , number : Int
     , labels : List PullRequestLabel
     }
 
@@ -71,6 +72,7 @@ type alias PullRequestLabel =
 issuesDecoder : Json.Decode.Decoder IssuesData
 issuesDecoder =
     Json.Decode.Pipeline.decode IssuesData
+        |> Json.Decode.Pipeline.required "url" Json.Decode.string
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "labels" pullRequestLabelListDecoder
 
