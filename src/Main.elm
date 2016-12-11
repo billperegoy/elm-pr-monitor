@@ -266,7 +266,36 @@ pullRequestViewElement model pullRequest =
                     pullRequest.comments
                 )
             , td [] (labelList pullRequest.labels)
+            , td [] [ pullRequest.buildStatus |> buildStatusGlyphicon ]
             ]
+
+
+buildStatusGlyphicon : Github.BuildStatus -> Html Msg
+buildStatusGlyphicon status =
+    case status of
+        Github.Pending ->
+            span
+                [ style
+                    [ ( "color", "black" ) ]
+                , class "glyphicon glyphicon-refresh"
+                ]
+                []
+
+        Github.Success ->
+            span
+                [ style
+                    [ ( "color", "green" ) ]
+                , class "glyphicon glyphicon-ok"
+                ]
+                []
+
+        Github.Fail ->
+            span
+                [ style
+                    [ ( "color", "red" ) ]
+                , class "glyphicon glyphicon-remove"
+                ]
+                []
 
 
 labelList : List Github.PullRequestLabel -> List (Html Msg)
@@ -305,6 +334,7 @@ pullRequestTableHeader =
             , th [] [ text "Description" ]
             , th [] [ text "Thumbs" ]
             , th [] [ text "Labels" ]
+            , th [] [ text "Build" ]
             ]
         ]
 
