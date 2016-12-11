@@ -71,7 +71,7 @@ initModel =
 type Msg
     = GetPullRequestData (Result Http.Error (List Github.PullRequestData))
     | GetPullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
-    | GetPullRequestLabelData (Result Http.Error (List Github.PullRequestLabel))
+    | GetPullRequestIssuesData (Result Http.Error (List Github.PullRequestLabel))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -90,7 +90,7 @@ update msg model =
                         , errors = Nothing
                     }
                         ! (getAllPullRequestCommentData newPullRequests
-                            ++ getAllPullRequestLabelData newPullRequests
+                            ++ getAllPullRequestIssuesData newPullRequests
                           )
 
                 Err error ->
@@ -108,17 +108,13 @@ update msg model =
                 Err error ->
                     { model | errors = Just (toString error) } ! []
 
-        GetPullRequestLabelData result ->
+        GetPullRequestIssuesData result ->
             case result of
-                Ok labels ->
-                    { model
-                        | pullRequests = ModelUpdate.addLabels model.pullRequests labels
-                        , errors = Nothing
-                    }
-                        ! []
+                Ok _ ->
+                    model ! []
 
-                Err error ->
-                    { model | errors = Just (toString error) } ! []
+                Err _ ->
+                    model ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -182,24 +178,24 @@ getPullRequestCommentData repository pullRequestId =
             (Http.get url Github.pullRequestCommentListDecoder)
 
 
-getAllPullRequestLabelData : List Github.PullRequestData -> List (Cmd Msg)
-getAllPullRequestLabelData pullRequests =
+getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
+getAllPullRequestIssuesData pullRequests =
     List.map
         (\pullRequest ->
-            getPullRequestLabelData
+            getPullRequestIssuesData
                 (Github.urlToRepository pullRequest.htmlUrl)
                 pullRequest.number
         )
         pullRequests
 
 
-getPullRequestLabelData : String -> Int -> Cmd Msg
-getPullRequestLabelData repository pullRequestId =
+getPullRequestIssuesData : String -> Int -> Cmd Msg
+getPullRequestIssuesData repository pullRequestId =
     let
         url =
-            Config.labelsUrl repository pullRequestId
+            Config.issuesUrl repository pullRequestId
     in
-        Http.send GetPullRequestLabelData
+        Http.send GetPullRequestIssuesData
             (Http.get url Github.pullRequestLabelListDecoder)
 
 

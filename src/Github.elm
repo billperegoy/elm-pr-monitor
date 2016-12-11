@@ -7,6 +7,12 @@ import String
 import DateTimeUtils
 
 
+type alias IssuesData =
+    { number : Int
+    , labels : List PullRequestLabel
+    }
+
+
 type alias PullRequestData =
     { number : Int
     , htmlUrl : String
@@ -30,7 +36,14 @@ type alias PullRequestDataWithComments =
     , user : UserData
     , comments : List PullRequestCommentData
     , labels : List PullRequestLabel
+    , buildStatus : BuildStatus
     }
+
+
+type BuildStatus
+    = Pending
+    | Success
+    | Fail
 
 
 addComments : PullRequestData -> PullRequestDataWithComments
@@ -43,13 +56,9 @@ addComments elem =
     , createdAt = elem.createdAt
     , head = elem.head
     , user = elem.user
-    , comments =
-        []
-        -- FIXME - make dynamic
-    , labels =
-        [ PullRequestLabel "Needs Thumbs" "5319e7"
-        , PullRequestLabel "Ready for Merge" "0e8a16"
-        ]
+    , comments = []
+    , labels = [ PullRequestLabel "Next Sprint" "FF69B4", PullRequestLabel "Ready for Merge" "0e8a16" ]
+    , buildStatus = Fail
     }
 
 
@@ -57,6 +66,13 @@ type alias PullRequestLabel =
     { name : String
     , color : String
     }
+
+
+issuesDecoder : Json.Decode.Decoder IssuesData
+issuesDecoder =
+    Json.Decode.Pipeline.decode IssuesData
+        |> Json.Decode.Pipeline.required "number" Json.Decode.int
+        |> Json.Decode.Pipeline.required "labels" pullRequestLabelListDecoder
 
 
 pullRequestLabelListDecoder : Json.Decode.Decoder (List PullRequestLabel)

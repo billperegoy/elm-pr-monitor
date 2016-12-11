@@ -37,11 +37,10 @@ commentsUrl repository pullRequestId =
         ++ "/comments"
 
 
-labelsUrl : String -> Int -> String
-labelsUrl repository pullRequestId =
+issuesUrl : String -> Int -> String
+issuesUrl repository pullRequestId =
     apiBase
         ++ "/repos/"
         ++ repository
         ++ "/issues/"
         ++ toString pullRequestId
-        ++ "/labels"
