@@ -17,11 +17,7 @@ type alias PullRequestCollection =
 
 pullRequestKey : Github.PullRequestDataWithComments -> String
 pullRequestKey pullRequest =
-    let
-        repo =
-            Github.urlToRepository pullRequest.htmlUrl
-    in
-        repo ++ ":" ++ toString pullRequest.number
+    pullRequest.head.repo.fullName ++ ":" ++ toString pullRequest.number
 
 
 pullRequestListToDict : List Github.PullRequestDataWithComments -> PullRequestCollection

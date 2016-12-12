@@ -129,10 +129,6 @@ type alias HeadData =
 type alias RepoData =
     { name : String
     , fullName : String
-    , statusesUrl : String
-    , commentsUrl : String
-    , issuesUrl : String
-    , labelsUrl : String
     }
 
 
@@ -191,10 +187,6 @@ repoDecoder =
     Json.Decode.Pipeline.decode RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
         |> Json.Decode.Pipeline.required "full_name" Json.Decode.string
-        |> Json.Decode.Pipeline.required "statuses_url" Json.Decode.string
-        |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
-        |> Json.Decode.Pipeline.required "issues_url" Json.Decode.string
-        |> Json.Decode.Pipeline.required "labels_url" Json.Decode.string
 
 
 sortByCreatedAt : PullRequestDataWithComments -> PullRequestDataWithComments -> Order
@@ -203,12 +195,8 @@ sortByCreatedAt a b =
         (DateTimeUtils.dateStringToTime b.createdAt)
 
 
-urlToRepository : String -> String
-urlToRepository url =
-    String.split "/" url
-        |> List.drop 3
-        |> List.take 2
-        |> String.join "/"
+
+-- FIXME - I'd love to get rid of these functions
 
 
 issueUrlToRepository url =

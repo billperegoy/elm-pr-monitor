@@ -198,38 +198,17 @@ getPullRequestCommentData url =
 getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestIssuesData pullRequests =
     List.map
-        (\pullRequest ->
-            getPullRequestIssuesData
-                (Github.urlToRepository pullRequest.htmlUrl)
-                pullRequest.number
-        )
+        (\pr -> getPullRequestIssuesData pr.statusesUrl)
         pullRequests
 
 
-getPullRequestIssuesData : String -> Int -> Cmd Msg
-getPullRequestIssuesData repository pullRequestId =
-    let
-        url =
-            Config.issuesUrl repository pullRequestId
-    in
-        Http.send GetPullRequestIssuesData
-            (Http.get (Debug.log "x: " url) Github.issuesDecoder)
+getPullRequestIssuesData : String -> Cmd Msg
+getPullRequestIssuesData url =
+    Http.send GetPullRequestIssuesData
+        (Http.get (Debug.log "x: " url) Github.issuesDecoder)
 
 
 
-{-
-   getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
-   getAllPullRequestIssuesData pullRequests =
-       List.map
-           (\pr -> getPullRequestIssuesData pr.head.repo.issuesUrl)
-           pullRequests
-
-
-   getPullRequestIssuesData : String -> Cmd Msg
-   getPullRequestIssuesData url =
-       Http.send GetPullRequestIssuesData
-           (Http.get url Github.issuesDecoder)
--}
 -----
 
 
