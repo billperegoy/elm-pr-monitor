@@ -203,10 +203,6 @@ sortByCreatedAt a b =
         (DateTimeUtils.dateStringToTime b.createdAt)
 
 
-
--- FIXME - I'd love to get rid of these functions
-
-
 issueUrlToRepository url =
     String.split "/" url
         |> List.drop 6
