@@ -25,12 +25,14 @@ type alias PullRequestData =
     { number : Int
     , htmlUrl : String
     , commentsUrl : String
+    , issueUrl : String
     , statusesUrl : String
     , title : String
     , body : String
     , state : String
     , createdAt : String
-    , head : HeadData
+    , head : GitElementData
+    , base : GitElementData
     , user : UserData
     }
 
@@ -39,12 +41,14 @@ type alias PullRequestDataWithComments =
     { number : Int
     , htmlUrl : String
     , commentsUrl : String
+    , issueUrl : String
     , statusesUrl : String
     , title : String
     , body : String
     , state : String
     , createdAt : String
-    , head : HeadData
+    , head : GitElementData
+    , base : GitElementData
     , user : UserData
     , comments : List PullRequestCommentData
     , labels : List PullRequestLabel
@@ -63,12 +67,14 @@ addComments elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
     , commentsUrl = elem.commentsUrl
+    , issueUrl = elem.issueUrl
     , statusesUrl = elem.statusesUrl
     , title = elem.title
     , body = elem.body
     , state = elem.state
     , createdAt = elem.createdAt
     , head = elem.head
+    , base = elem.base
     , user = elem.user
     , comments = []
     , labels = []
@@ -122,7 +128,7 @@ type alias PullRequestCommentData =
     }
 
 
-type alias HeadData =
+type alias GitElementData =
     { repo : RepoData }
 
 
@@ -161,18 +167,20 @@ pullRequestDataDecoder =
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "issue_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "statuses_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "title" Json.Decode.string
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "state" Json.Decode.string
         |> Json.Decode.Pipeline.required "created_at" Json.Decode.string
-        |> Json.Decode.Pipeline.required "head" headDecoder
+        |> Json.Decode.Pipeline.required "head" gitElementDecoder
+        |> Json.Decode.Pipeline.required "base" gitElementDecoder
         |> Json.Decode.Pipeline.required "user" userDecoder
 
 
-headDecoder : Json.Decode.Decoder HeadData
-headDecoder =
-    Json.Decode.Pipeline.decode HeadData
+gitElementDecoder : Json.Decode.Decoder GitElementData
+gitElementDecoder =
+    Json.Decode.Pipeline.decode GitElementData
         |> Json.Decode.Pipeline.required "repo" repoDecoder
 
 

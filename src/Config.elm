@@ -3,10 +3,9 @@ module Config exposing (..)
 
 repositories : List String
 repositories =
-    [ "es/contacts-core"
+    [ "ES/contacts-core"
     , "contacts/contacts-listpicker-ui"
-    , "es/smsjmml"
-    , "es/ctct"
+    , "ES/ctct"
     ]
 
 

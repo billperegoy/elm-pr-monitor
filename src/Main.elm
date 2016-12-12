@@ -126,7 +126,7 @@ update msg model =
                     { model | errors = Just (toString error) } ! []
 
         GetPullRequestStatusData result ->
-            case (Debug.log "st: " result) of
+            case result of
                 Ok statuses ->
                     model ! []
 
@@ -198,14 +198,14 @@ getPullRequestCommentData url =
 getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestIssuesData pullRequests =
     List.map
-        (\pr -> getPullRequestIssuesData pr.statusesUrl)
+        (\pr -> getPullRequestIssuesData pr.issueUrl)
         pullRequests
 
 
 getPullRequestIssuesData : String -> Cmd Msg
 getPullRequestIssuesData url =
     Http.send GetPullRequestIssuesData
-        (Http.get (Debug.log "x: " url) Github.issuesDecoder)
+        (Http.get url Github.issuesDecoder)
 
 
 
