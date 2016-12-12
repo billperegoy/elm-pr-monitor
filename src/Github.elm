@@ -37,7 +37,7 @@ type alias PullRequestData =
     }
 
 
-type alias PullRequestDataWithComments =
+type alias AugmentedPullRequestData =
     { number : Int
     , htmlUrl : String
     , commentsUrl : String
@@ -62,7 +62,7 @@ type BuildStatus
     | Fail
 
 
-addComments : PullRequestData -> PullRequestDataWithComments
+addComments : PullRequestData -> AugmentedPullRequestData
 addComments elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
@@ -197,7 +197,7 @@ repoDecoder =
         |> Json.Decode.Pipeline.required "full_name" Json.Decode.string
 
 
-sortByCreatedAt : PullRequestDataWithComments -> PullRequestDataWithComments -> Order
+sortByCreatedAt : AugmentedPullRequestData -> AugmentedPullRequestData -> Order
 sortByCreatedAt a b =
     compare (DateTimeUtils.dateStringToTime a.createdAt)
         (DateTimeUtils.dateStringToTime b.createdAt)

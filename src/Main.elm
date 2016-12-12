@@ -255,7 +255,7 @@ elapsedTimeToColor state decayTimeInDays elapsedTime =
             ( "background-color", "#65f442" )
 
 
-pullRequestViewElement : Model -> Github.PullRequestDataWithComments -> Html Msg
+pullRequestViewElement : Model -> Github.AugmentedPullRequestData -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =

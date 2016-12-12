@@ -12,15 +12,15 @@ import Github
 
 
 type alias PullRequestCollection =
-    Dict.Dict String Github.PullRequestDataWithComments
+    Dict.Dict String Github.AugmentedPullRequestData
 
 
-pullRequestKey : Github.PullRequestDataWithComments -> String
+pullRequestKey : Github.AugmentedPullRequestData -> String
 pullRequestKey pullRequest =
     pullRequest.base.repo.fullName ++ ":" ++ toString pullRequest.number
 
 
-pullRequestListToDict : List Github.PullRequestDataWithComments -> PullRequestCollection
+pullRequestListToDict : List Github.AugmentedPullRequestData -> PullRequestCollection
 pullRequestListToDict pullRequests =
     let
         zippedList =
@@ -39,7 +39,7 @@ addLabels pullRequests issue =
                 ++ ":"
                 ++ Github.issueUrlToPullRequestId issue.url
 
-        pr : Maybe Github.PullRequestDataWithComments
+        pr : Maybe Github.AugmentedPullRequestData
         pr =
             Dict.get key pullRequests
 
@@ -75,11 +75,11 @@ addComments pullRequests comments =
                 |> List.head
                 |> Maybe.withDefault "error"
 
-        pr : Maybe Github.PullRequestDataWithComments
+        pr : Maybe Github.AugmentedPullRequestData
         pr =
             Dict.get key pullRequests
 
-        newPr : Maybe Github.PullRequestDataWithComments
+        newPr : Maybe Github.AugmentedPullRequestData
         newPr =
             case pr of
                 Nothing ->
