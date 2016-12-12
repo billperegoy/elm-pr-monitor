@@ -71,7 +71,7 @@ initModel =
 type Msg
     = GetPullRequestData (Result Http.Error (List Github.PullRequestData))
     | GetPullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
-    | GetPullRequestIssuesData (Result Http.Error (List Github.PullRequestLabel))
+    | GetPullRequestIssuesData (Result Http.Error Github.IssuesData)
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -110,11 +110,18 @@ update msg model =
 
         GetPullRequestIssuesData result ->
             case result of
-                Ok _ ->
-                    model ! []
+                Ok issue ->
+                    { model
+                        | pullRequests =
+                            ModelUpdate.addLabels
+                                model.pullRequests
+                                issue
+                        , errors = Nothing
+                    }
+                        ! []
 
-                Err _ ->
-                    model ! []
+                Err error ->
+                    { model | errors = Just (toString error) } ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
@@ -196,7 +203,7 @@ getPullRequestIssuesData repository pullRequestId =
             Config.issuesUrl repository pullRequestId
     in
         Http.send GetPullRequestIssuesData
-            (Http.get url Github.pullRequestLabelListDecoder)
+            (Http.get url Github.issuesDecoder)
 
 
 
@@ -305,6 +312,7 @@ labelList labels =
             div
                 [ style
                     [ ( "background-color", label.color )
+                    , ( "margin-bottom", "2px" )
                     , ( "display", "block" )
                     ]
                 , class "label label-primary"

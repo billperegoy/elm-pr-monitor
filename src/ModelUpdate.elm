@@ -33,26 +33,35 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
-addLabels : PullRequestCollection -> List Github.IssuesData -> PullRequestCollection
-addLabels pullRequests issues =
+addLabels : PullRequestCollection -> Github.IssuesData -> PullRequestCollection
+addLabels pullRequests issue =
     let
         key : String
         key =
-            issues
-                |> List.map
-                    (\e ->
-                        Github.issueUrlToRepository e.url
-                            ++ ":"
-                            ++ Github.issueUrlToPullRequestId e.url
-                    )
-                |> List.head
-                |> Maybe.withDefault "error"
+            Github.issueUrlToRepository
+                issue.url
+                ++ ":"
+                ++ Github.issueUrlToPullRequestId issue.url
 
         pr : Maybe Github.PullRequestDataWithComments
         pr =
             Dict.get key pullRequests
+
+        newPr =
+            case pr of
+                Nothing ->
+                    Nothing
+
+                Just a ->
+                    Just { a | labels = issue.labels }
     in
-        pullRequests
+        case newPr of
+            Nothing ->
+                pullRequests
+
+            Just a ->
+                Dict.union (Dict.singleton key a)
+                    pullRequests
 
 
 addComments : PullRequestCollection -> List Github.PullRequestCommentData -> PullRequestCollection
