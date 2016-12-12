@@ -72,6 +72,7 @@ type Msg
     = GetPullRequestData (Result Http.Error (List Github.PullRequestData))
     | GetPullRequestCommentData (Result Http.Error (List Github.PullRequestCommentData))
     | GetPullRequestIssuesData (Result Http.Error Github.IssuesData)
+    | GetPullRequestStatusData (Result Http.Error (List Github.StatusData))
     | SetDecayTimeFormValue String
     | UpdateDecayTime
     | EverySecond Float
@@ -91,6 +92,7 @@ update msg model =
                     }
                         ! (getAllPullRequestCommentData newPullRequests
                             ++ getAllPullRequestIssuesData newPullRequests
+                            ++ getAllPullRequestStatusData newPullRequests
                           )
 
                 Err error ->
@@ -119,6 +121,14 @@ update msg model =
                         , errors = Nothing
                     }
                         ! []
+
+                Err error ->
+                    { model | errors = Just (toString error) } ! []
+
+        GetPullRequestStatusData result ->
+            case (Debug.log "st: " result) of
+                Ok statuses ->
+                    model ! []
 
                 Err error ->
                     { model | errors = Just (toString error) } ! []
@@ -164,46 +174,55 @@ getPullRequestData repository =
             (Http.get url Github.pullRequestListDecoder)
 
 
+
+-----
+
+
 getAllPullRequestCommentData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestCommentData pullRequests =
     List.map
-        (\pullRequest ->
-            getPullRequestCommentData
-                (Github.urlToRepository pullRequest.htmlUrl)
-                pullRequest.number
-        )
+        (\pr -> getPullRequestCommentData pr.head.repo.commentsUrl)
         pullRequests
 
 
-getPullRequestCommentData : String -> Int -> Cmd Msg
-getPullRequestCommentData repository pullRequestId =
-    let
-        url =
-            Config.commentsUrl repository pullRequestId
-    in
-        Http.send GetPullRequestCommentData
-            (Http.get url Github.pullRequestCommentListDecoder)
+getPullRequestCommentData : String -> Cmd Msg
+getPullRequestCommentData url =
+    Http.send GetPullRequestCommentData
+        (Http.get url Github.pullRequestCommentListDecoder)
+
+
+
+-----
 
 
 getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestIssuesData pullRequests =
     List.map
-        (\pullRequest ->
-            getPullRequestIssuesData
-                (Github.urlToRepository pullRequest.htmlUrl)
-                pullRequest.number
-        )
+        (\pr -> getPullRequestIssuesData pr.head.repo.issuesUrl)
         pullRequests
 
 
-getPullRequestIssuesData : String -> Int -> Cmd Msg
-getPullRequestIssuesData repository pullRequestId =
-    let
-        url =
-            Config.issuesUrl repository pullRequestId
-    in
-        Http.send GetPullRequestIssuesData
-            (Http.get url Github.issuesDecoder)
+getPullRequestIssuesData : String -> Cmd Msg
+getPullRequestIssuesData url =
+    Http.send GetPullRequestIssuesData
+        (Http.get url Github.issuesDecoder)
+
+
+
+-----
+
+
+getAllPullRequestStatusData : List Github.PullRequestData -> List (Cmd Msg)
+getAllPullRequestStatusData pullRequests =
+    List.map
+        (\pr -> getPullRequestStatusData pr.head.repo.statusesUrl)
+        pullRequests
+
+
+getPullRequestStatusData : String -> Cmd Msg
+getPullRequestStatusData url =
+    Http.send GetPullRequestStatusData
+        (Http.get url Github.statusListDecoder)
 
 
 
@@ -354,7 +373,7 @@ pullRequestTable model =
             Dict.values model.pullRequests
                 |> List.sortWith Github.sortByCreatedAt
     in
-        table [ class "table" ]
+        table [ class "table table-striped" ]
             [ pullRequestTableHeader
             , tbody []
                 (List.map

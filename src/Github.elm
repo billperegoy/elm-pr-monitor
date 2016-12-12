@@ -14,6 +14,13 @@ type alias IssuesData =
     }
 
 
+type alias StatusData =
+    { url : String
+    , description : String
+    , state : String
+    }
+
+
 type alias PullRequestData =
     { number : Int
     , htmlUrl : String
@@ -77,6 +84,19 @@ issuesDecoder =
         |> Json.Decode.Pipeline.required "labels" pullRequestLabelListDecoder
 
 
+statusListDecoder : Json.Decode.Decoder (List StatusData)
+statusListDecoder =
+    Json.Decode.list statusDecoder
+
+
+statusDecoder : Json.Decode.Decoder StatusData
+statusDecoder =
+    Json.Decode.Pipeline.decode StatusData
+        |> Json.Decode.Pipeline.required "url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "description" Json.Decode.string
+        |> Json.Decode.Pipeline.required "state" Json.Decode.string
+
+
 pullRequestLabelListDecoder : Json.Decode.Decoder (List PullRequestLabel)
 pullRequestLabelListDecoder =
     Json.Decode.list pullRequestLabelDecoder
@@ -101,7 +121,12 @@ type alias HeadData =
 
 
 type alias RepoData =
-    { name : String }
+    { name : String
+    , statusesUrl : String
+    , commentsUrl : String
+    , issuesUrl : String
+    , labelsUrl : String
+    }
 
 
 type alias UserData =
@@ -156,6 +181,10 @@ repoDecoder : Json.Decode.Decoder RepoData
 repoDecoder =
     Json.Decode.Pipeline.decode RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
+        |> Json.Decode.Pipeline.required "statuses_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "issues_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "labels_url" Json.Decode.string
 
 
 sortByCreatedAt : PullRequestDataWithComments -> PullRequestDataWithComments -> Order
@@ -172,7 +201,6 @@ urlToRepository url =
         |> String.join "/"
 
 
-issueUrlToRepository : String -> String
 issueUrlToRepository url =
     String.split "/" url
         |> List.drop 6
