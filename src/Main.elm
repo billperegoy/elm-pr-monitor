@@ -181,7 +181,7 @@ getPullRequestData repository =
 getAllPullRequestCommentData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestCommentData pullRequests =
     List.map
-        (\pr -> getPullRequestCommentData pr.head.repo.commentsUrl)
+        (\pr -> getPullRequestCommentData pr.commentsUrl)
         pullRequests
 
 
@@ -198,24 +198,45 @@ getPullRequestCommentData url =
 getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestIssuesData pullRequests =
     List.map
-        (\pr -> getPullRequestIssuesData pr.head.repo.issuesUrl)
+        (\pullRequest ->
+            getPullRequestIssuesData
+                (Github.urlToRepository pullRequest.htmlUrl)
+                pullRequest.number
+        )
         pullRequests
 
 
-getPullRequestIssuesData : String -> Cmd Msg
-getPullRequestIssuesData url =
-    Http.send GetPullRequestIssuesData
-        (Http.get url Github.issuesDecoder)
+getPullRequestIssuesData : String -> Int -> Cmd Msg
+getPullRequestIssuesData repository pullRequestId =
+    let
+        url =
+            Config.issuesUrl repository pullRequestId
+    in
+        Http.send GetPullRequestIssuesData
+            (Http.get (Debug.log "x: " url) Github.issuesDecoder)
 
 
 
+{-
+   getAllPullRequestIssuesData : List Github.PullRequestData -> List (Cmd Msg)
+   getAllPullRequestIssuesData pullRequests =
+       List.map
+           (\pr -> getPullRequestIssuesData pr.head.repo.issuesUrl)
+           pullRequests
+
+
+   getPullRequestIssuesData : String -> Cmd Msg
+   getPullRequestIssuesData url =
+       Http.send GetPullRequestIssuesData
+           (Http.get url Github.issuesDecoder)
+-}
 -----
 
 
 getAllPullRequestStatusData : List Github.PullRequestData -> List (Cmd Msg)
 getAllPullRequestStatusData pullRequests =
     List.map
-        (\pr -> getPullRequestStatusData pr.head.repo.statusesUrl)
+        (\pr -> getPullRequestStatusData pr.statusesUrl)
         pullRequests
 
 

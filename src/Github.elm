@@ -24,6 +24,8 @@ type alias StatusData =
 type alias PullRequestData =
     { number : Int
     , htmlUrl : String
+    , commentsUrl : String
+    , statusesUrl : String
     , title : String
     , body : String
     , state : String
@@ -36,6 +38,8 @@ type alias PullRequestData =
 type alias PullRequestDataWithComments =
     { number : Int
     , htmlUrl : String
+    , commentsUrl : String
+    , statusesUrl : String
     , title : String
     , body : String
     , state : String
@@ -58,6 +62,8 @@ addComments : PullRequestData -> PullRequestDataWithComments
 addComments elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
+    , commentsUrl = elem.commentsUrl
+    , statusesUrl = elem.statusesUrl
     , title = elem.title
     , body = elem.body
     , state = elem.state
@@ -65,7 +71,7 @@ addComments elem =
     , head = elem.head
     , user = elem.user
     , comments = []
-    , labels = [ PullRequestLabel "Next Sprint" "FF69B4", PullRequestLabel "Ready for Merge" "0e8a16" ]
+    , labels = []
     , buildStatus = Fail
     }
 
@@ -122,6 +128,7 @@ type alias HeadData =
 
 type alias RepoData =
     { name : String
+    , fullName : String
     , statusesUrl : String
     , commentsUrl : String
     , issuesUrl : String
@@ -157,6 +164,8 @@ pullRequestDataDecoder =
     Json.Decode.Pipeline.decode PullRequestData
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
+        |> Json.Decode.Pipeline.required "statuses_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "title" Json.Decode.string
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "state" Json.Decode.string
@@ -181,6 +190,7 @@ repoDecoder : Json.Decode.Decoder RepoData
 repoDecoder =
     Json.Decode.Pipeline.decode RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
+        |> Json.Decode.Pipeline.required "full_name" Json.Decode.string
         |> Json.Decode.Pipeline.required "statuses_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "issues_url" Json.Decode.string
