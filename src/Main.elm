@@ -17,7 +17,6 @@ import TimeAgo
 import Github
 import Config
 import DateTimeUtils
-import ModelUpdate
 import Model exposing (..)
 import View
 
@@ -46,7 +45,7 @@ update msg model =
                 Ok newPullRequests ->
                     { model
                         | pullRequests =
-                            ModelUpdate.updatePullRequests model.pullRequests newPullRequests
+                            updatePullRequests model.pullRequests newPullRequests
                         , errors = Nothing
                     }
                         ! (getAllPullRequestCommentData newPullRequests
@@ -61,7 +60,7 @@ update msg model =
             case result of
                 Ok comments ->
                     { model
-                        | pullRequests = ModelUpdate.addComments model.pullRequests comments
+                        | pullRequests = addComments model.pullRequests comments
                         , errors = Nothing
                     }
                         ! []
@@ -74,7 +73,7 @@ update msg model =
                 Ok issue ->
                     { model
                         | pullRequests =
-                            ModelUpdate.addLabels
+                            addLabels
                                 model.pullRequests
                                 issue
                         , errors = Nothing
