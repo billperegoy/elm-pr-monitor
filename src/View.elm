@@ -7,7 +7,6 @@ import Date
 import Time
 import Dict
 import TimeAgo
-import Github
 import DateTimeUtils
 import Model exposing (..)
 
@@ -36,7 +35,7 @@ elapsedTimeToColor state decayTimeInDays elapsedTime =
             ( "background-color", "#65f442" )
 
 
-pullRequestViewElement : Model -> Github.AugmentedPullRequestData -> Html Msg
+pullRequestViewElement : Model -> Model.AugmentedPullRequestData -> Html Msg
 pullRequestViewElement model pullRequest =
     let
         prTime =
@@ -77,10 +76,10 @@ pullRequestViewElement model pullRequest =
             ]
 
 
-buildStatusGlyphicon : Github.BuildStatus -> Html Msg
+buildStatusGlyphicon : Model.BuildStatus -> Html Msg
 buildStatusGlyphicon status =
     case status of
-        Github.Pending ->
+        Model.Pending ->
             span
                 [ style
                     [ ( "color", "black" ) ]
@@ -88,7 +87,7 @@ buildStatusGlyphicon status =
                 ]
                 []
 
-        Github.Success ->
+        Model.Success ->
             span
                 [ style
                     [ ( "color", "green" ) ]
@@ -96,7 +95,7 @@ buildStatusGlyphicon status =
                 ]
                 []
 
-        Github.Fail ->
+        Model.Fail ->
             span
                 [ style
                     [ ( "color", "red" ) ]
@@ -105,7 +104,7 @@ buildStatusGlyphicon status =
                 []
 
 
-labelList : List Github.PullRequestLabel -> List (Html Msg)
+labelList : List Model.PullRequestLabel -> List (Html Msg)
 labelList labels =
     List.map
         (\label ->
@@ -147,12 +146,18 @@ pullRequestTableHeader =
         ]
 
 
+sortByCreatedAt : Model.AugmentedPullRequestData -> Model.AugmentedPullRequestData -> Order
+sortByCreatedAt a b =
+    compare (DateTimeUtils.dateStringToTime a.createdAt)
+        (DateTimeUtils.dateStringToTime b.createdAt)
+
+
 pullRequestTable : Model -> Html Msg
 pullRequestTable model =
     let
         sortedPullRequests =
             Dict.values model.pullRequests
-                |> List.sortWith Github.sortByCreatedAt
+                |> List.sortWith sortByCreatedAt
     in
         table [ class "table table-striped" ]
             [ pullRequestTableHeader

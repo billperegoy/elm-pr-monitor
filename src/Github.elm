@@ -6,57 +6,10 @@ import Json.Decode.Pipeline
 import String
 import DateTimeUtils
 import Dict
+import Model
 
 
-type alias StatusData =
-    { url : String
-    , description : String
-    , state : String
-    }
-
-
-type alias PullRequestData =
-    { number : Int
-    , htmlUrl : String
-    , commentsUrl : String
-    , issueUrl : String
-    , statusesUrl : String
-    , title : String
-    , body : String
-    , state : String
-    , createdAt : String
-    , head : GitElementData
-    , base : GitElementData
-    , user : UserData
-    }
-
-
-type alias AugmentedPullRequestData =
-    { number : Int
-    , htmlUrl : String
-    , commentsUrl : String
-    , issueUrl : String
-    , statusesUrl : String
-    , title : String
-    , body : String
-    , state : String
-    , createdAt : String
-    , head : GitElementData
-    , base : GitElementData
-    , user : UserData
-    , comments : List PullRequestCommentData
-    , labels : List PullRequestLabel
-    , buildStatus : BuildStatus
-    }
-
-
-type BuildStatus
-    = Pending
-    | Success
-    | Fail
-
-
-augmentPullRequestData : PullRequestData -> AugmentedPullRequestData
+augmentPullRequestData : Model.PullRequestData -> Model.AugmentedPullRequestData
 augmentPullRequestData elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
@@ -72,99 +25,64 @@ augmentPullRequestData elem =
     , user = elem.user
     , comments = []
     , labels = []
-    , buildStatus = Fail
+    , buildStatus = Model.Fail
     }
 
 
-type alias PullRequestLabel =
-    { name : String
-    , color : String
-    }
-
-
-type alias IssuesData =
-    { url : String
-    , number : Int
-    , labels : List PullRequestLabel
-    }
-
-
-issuesDecoder : Json.Decode.Decoder IssuesData
+issuesDecoder : Json.Decode.Decoder Model.IssuesData
 issuesDecoder =
-    Json.Decode.Pipeline.decode IssuesData
+    Json.Decode.Pipeline.decode Model.IssuesData
         |> Json.Decode.Pipeline.required "url" Json.Decode.string
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "labels" pullRequestLabelListDecoder
 
 
-statusListDecoder : Json.Decode.Decoder (List StatusData)
+statusListDecoder : Json.Decode.Decoder (List Model.StatusData)
 statusListDecoder =
     Json.Decode.list statusDecoder
 
 
-statusDecoder : Json.Decode.Decoder StatusData
+statusDecoder : Json.Decode.Decoder Model.StatusData
 statusDecoder =
-    Json.Decode.Pipeline.decode StatusData
+    Json.Decode.Pipeline.decode Model.StatusData
         |> Json.Decode.Pipeline.required "url" Json.Decode.string
         |> Json.Decode.Pipeline.required "description" Json.Decode.string
         |> Json.Decode.Pipeline.required "state" Json.Decode.string
 
 
-pullRequestLabelListDecoder : Json.Decode.Decoder (List PullRequestLabel)
+pullRequestLabelListDecoder : Json.Decode.Decoder (List Model.PullRequestLabel)
 pullRequestLabelListDecoder =
     Json.Decode.list pullRequestLabelDecoder
 
 
-pullRequestLabelDecoder : Json.Decode.Decoder PullRequestLabel
+pullRequestLabelDecoder : Json.Decode.Decoder Model.PullRequestLabel
 pullRequestLabelDecoder =
-    Json.Decode.Pipeline.decode PullRequestLabel
+    Json.Decode.Pipeline.decode Model.PullRequestLabel
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
         |> Json.Decode.Pipeline.required "color" Json.Decode.string
 
 
-type alias PullRequestCommentData =
-    { body : String
-    , user : UserData
-    , issueUrl : String
-    }
-
-
-type alias GitElementData =
-    { repo : RepoData }
-
-
-type alias RepoData =
-    { name : String
-    , fullName : String
-    }
-
-
-type alias UserData =
-    { login : String
-    }
-
-
-pullRequestCommentListDecoder : Json.Decode.Decoder (List PullRequestCommentData)
+pullRequestCommentListDecoder : Json.Decode.Decoder (List Model.PullRequestCommentData)
 pullRequestCommentListDecoder =
     Json.Decode.list pullRequestCommentDecoder
 
 
-pullRequestCommentDecoder : Json.Decode.Decoder PullRequestCommentData
+pullRequestCommentDecoder : Json.Decode.Decoder Model.PullRequestCommentData
 pullRequestCommentDecoder =
-    Json.Decode.Pipeline.decode PullRequestCommentData
+    Json.Decode.Pipeline.decode Model.PullRequestCommentData
         |> Json.Decode.Pipeline.required "body" Json.Decode.string
         |> Json.Decode.Pipeline.required "user" userDecoder
         |> Json.Decode.Pipeline.required "issue_url" Json.Decode.string
 
 
-pullRequestListDecoder : Json.Decode.Decoder (List PullRequestData)
+pullRequestListDecoder : Json.Decode.Decoder (List Model.PullRequestData)
 pullRequestListDecoder =
     Json.Decode.list pullRequestDataDecoder
 
 
-pullRequestDataDecoder : Json.Decode.Decoder PullRequestData
+pullRequestDataDecoder : Json.Decode.Decoder Model.PullRequestData
 pullRequestDataDecoder =
-    Json.Decode.Pipeline.decode PullRequestData
+    Json.Decode.Pipeline.decode Model.PullRequestData
         |> Json.Decode.Pipeline.required "number" Json.Decode.int
         |> Json.Decode.Pipeline.required "html_url" Json.Decode.string
         |> Json.Decode.Pipeline.required "comments_url" Json.Decode.string
@@ -179,29 +97,23 @@ pullRequestDataDecoder =
         |> Json.Decode.Pipeline.required "user" userDecoder
 
 
-gitElementDecoder : Json.Decode.Decoder GitElementData
+gitElementDecoder : Json.Decode.Decoder Model.GitElementData
 gitElementDecoder =
-    Json.Decode.Pipeline.decode GitElementData
+    Json.Decode.Pipeline.decode Model.GitElementData
         |> Json.Decode.Pipeline.required "repo" repoDecoder
 
 
-userDecoder : Json.Decode.Decoder UserData
+userDecoder : Json.Decode.Decoder Model.UserData
 userDecoder =
-    Json.Decode.Pipeline.decode UserData
+    Json.Decode.Pipeline.decode Model.UserData
         |> Json.Decode.Pipeline.required "login" Json.Decode.string
 
 
-repoDecoder : Json.Decode.Decoder RepoData
+repoDecoder : Json.Decode.Decoder Model.RepoData
 repoDecoder =
-    Json.Decode.Pipeline.decode RepoData
+    Json.Decode.Pipeline.decode Model.RepoData
         |> Json.Decode.Pipeline.required "name" Json.Decode.string
         |> Json.Decode.Pipeline.required "full_name" Json.Decode.string
-
-
-sortByCreatedAt : AugmentedPullRequestData -> AugmentedPullRequestData -> Order
-sortByCreatedAt a b =
-    compare (DateTimeUtils.dateStringToTime a.createdAt)
-        (DateTimeUtils.dateStringToTime b.createdAt)
 
 
 issueUrlToRepository url =
@@ -219,16 +131,12 @@ issueUrlToPullRequestId url =
         |> Maybe.withDefault "error"
 
 
-type alias PullRequestCollection =
-    Dict.Dict String AugmentedPullRequestData
-
-
-pullRequestKey : AugmentedPullRequestData -> String
+pullRequestKey : Model.AugmentedPullRequestData -> String
 pullRequestKey pullRequest =
     pullRequest.base.repo.fullName ++ ":" ++ toString pullRequest.number
 
 
-pullRequestListToDict : List AugmentedPullRequestData -> PullRequestCollection
+pullRequestListToDict : List Model.AugmentedPullRequestData -> Model.PullRequestCollection
 pullRequestListToDict pullRequests =
     let
         zippedList =
@@ -245,13 +153,13 @@ issueUrlToDictKey url =
         ++ issueUrlToPullRequestId url
 
 
-addLabels : PullRequestCollection -> IssuesData -> PullRequestCollection
+addLabels : Model.PullRequestCollection -> Model.IssuesData -> Model.PullRequestCollection
 addLabels pullRequests issue =
     let
         key =
             issueUrlToDictKey issue.url
 
-        pr : Maybe AugmentedPullRequestData
+        pr : Maybe Model.AugmentedPullRequestData
         pr =
             Dict.get key pullRequests
 
@@ -266,7 +174,7 @@ addLabels pullRequests issue =
                 Dict.union (Dict.singleton key a) pullRequests
 
 
-addComments : PullRequestCollection -> List PullRequestCommentData -> PullRequestCollection
+addComments : Model.PullRequestCollection -> List Model.PullRequestCommentData -> Model.PullRequestCollection
 addComments pullRequests comments =
     let
         key : String
@@ -276,11 +184,11 @@ addComments pullRequests comments =
                 |> List.head
                 |> Maybe.withDefault "error"
 
-        pr : Maybe AugmentedPullRequestData
+        pr : Maybe Model.AugmentedPullRequestData
         pr =
             Dict.get key pullRequests
 
-        extractComments : AugmentedPullRequestData -> List PullRequestCommentData -> AugmentedPullRequestData
+        extractComments : Model.AugmentedPullRequestData -> List Model.PullRequestCommentData -> Model.AugmentedPullRequestData
         extractComments pr comments =
             { pr
                 | comments =
@@ -292,7 +200,7 @@ addComments pullRequests comments =
                         comments
             }
 
-        newPr : Maybe AugmentedPullRequestData
+        newPr : Maybe Model.AugmentedPullRequestData
         newPr =
             Maybe.map (\pull -> extractComments pull comments) pr
     in
@@ -304,7 +212,7 @@ addComments pullRequests comments =
                 Dict.union (Dict.singleton key a) pullRequests
 
 
-updatePullRequests : PullRequestCollection -> List PullRequestData -> PullRequestCollection
+updatePullRequests : Model.PullRequestCollection -> List Model.PullRequestData -> Model.PullRequestCollection
 updatePullRequests pullRequests newPullRequests =
     Dict.union
         (newPullRequests
