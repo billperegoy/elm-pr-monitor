@@ -4,7 +4,6 @@ import Dict
 import Time
 import Github
 import Http
-import Config
 
 
 type alias Model =
@@ -55,35 +54,33 @@ pullRequestListToDict pullRequests =
         Dict.fromList zippedList
 
 
+issueUrlToDictKey : String -> String
+issueUrlToDictKey url =
+    Github.issueUrlToRepository
+        url
+        ++ ":"
+        ++ Github.issueUrlToPullRequestId url
+
+
 addLabels : PullRequestCollection -> Github.IssuesData -> PullRequestCollection
 addLabels pullRequests issue =
     let
-        key : String
         key =
-            Github.issueUrlToRepository
-                issue.url
-                ++ ":"
-                ++ Github.issueUrlToPullRequestId issue.url
+            issueUrlToDictKey issue.url
 
         pr : Maybe Github.AugmentedPullRequestData
         pr =
             Dict.get key pullRequests
 
         newPr =
-            case pr of
-                Nothing ->
-                    Nothing
-
-                Just a ->
-                    Just { a | labels = issue.labels }
+            Maybe.map (\pr -> { pr | labels = issue.labels }) pr
     in
         case newPr of
             Nothing ->
                 pullRequests
 
             Just a ->
-                Dict.union (Dict.singleton key a)
-                    pullRequests
+                Dict.union (Dict.singleton key a) pullRequests
 
 
 addComments : PullRequestCollection -> List Github.PullRequestCommentData -> PullRequestCollection
@@ -92,12 +89,7 @@ addComments pullRequests comments =
         key : String
         key =
             comments
-                |> List.map
-                    (\e ->
-                        Github.issueUrlToRepository e.issueUrl
-                            ++ ":"
-                            ++ Github.issueUrlToPullRequestId e.issueUrl
-                    )
+                |> List.map (\e -> issueUrlToDictKey e.issueUrl)
                 |> List.head
                 |> Maybe.withDefault "error"
 
@@ -105,38 +97,35 @@ addComments pullRequests comments =
         pr =
             Dict.get key pullRequests
 
+        extractComments : Github.AugmentedPullRequestData -> List Github.PullRequestCommentData -> Github.AugmentedPullRequestData
+        extractComments pr comments =
+            { pr
+                | comments =
+                    List.filter
+                        (\e ->
+                            (String.contains "👍" e.body)
+                                || (String.contains ":+1" e.body)
+                        )
+                        comments
+            }
+
         newPr : Maybe Github.AugmentedPullRequestData
         newPr =
-            case pr of
-                Nothing ->
-                    Nothing
-
-                Just a ->
-                    Just
-                        { a
-                            | comments =
-                                List.filter
-                                    (\e ->
-                                        (String.contains "👍" e.body)
-                                            || (String.contains ":+1" e.body)
-                                    )
-                                    comments
-                        }
+            Maybe.map (\pull -> extractComments pull comments) pr
     in
         case newPr of
             Nothing ->
                 pullRequests
 
             Just a ->
-                Dict.union (Dict.singleton key a)
-                    pullRequests
+                Dict.union (Dict.singleton key a) pullRequests
 
 
 updatePullRequests : PullRequestCollection -> List Github.PullRequestData -> PullRequestCollection
 updatePullRequests pullRequests newPullRequests =
     Dict.union
         (newPullRequests
-            |> List.map (\e -> Github.addComments e)
+            |> List.map (\e -> Github.augmentPullRequestData e)
             |> pullRequestListToDict
         )
         pullRequests

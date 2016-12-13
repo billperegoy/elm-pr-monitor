@@ -15,7 +15,6 @@ import String
 
 import TimeAgo
 import Github
-import Config
 import DateTimeUtils
 import Model exposing (..)
 import View
@@ -24,11 +23,19 @@ import View
 main : Program Never Model Msg
 main =
     Html.program
-        { init = initModel ! getAllPullRequestData Config.repositories
+        { init = initModel ! getAllPullRequestData repositories
         , view = View.view
         , update = update
         , subscriptions = subscriptions
         }
+
+
+repositories : List String
+repositories =
+    [ "ES/contacts-core"
+    , "contacts/contacts-listpicker-ui"
+    , "ES/ctct"
+    ]
 
 
 
@@ -108,7 +115,7 @@ update msg model =
 
         UpdatePullRequestData _ ->
             model
-                ! getAllPullRequestData Config.repositories
+                ! getAllPullRequestData repositories
 
 
 
@@ -126,7 +133,10 @@ getPullRequestData : String -> Cmd Msg
 getPullRequestData repository =
     let
         url =
-            Config.pullRequestUrl repository
+            "https://github.roving.com/api/v3"
+                ++ "/repos/"
+                ++ repository
+                ++ "/pulls"
     in
         Http.send GetPullRequestData
             (Http.get url Github.pullRequestListDecoder)

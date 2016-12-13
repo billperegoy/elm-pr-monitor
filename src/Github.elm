@@ -7,13 +7,6 @@ import String
 import DateTimeUtils
 
 
-type alias IssuesData =
-    { url : String
-    , number : Int
-    , labels : List PullRequestLabel
-    }
-
-
 type alias StatusData =
     { url : String
     , description : String
@@ -62,8 +55,8 @@ type BuildStatus
     | Fail
 
 
-addComments : PullRequestData -> AugmentedPullRequestData
-addComments elem =
+augmentPullRequestData : PullRequestData -> AugmentedPullRequestData
+augmentPullRequestData elem =
     { number = elem.number
     , htmlUrl = elem.htmlUrl
     , commentsUrl = elem.commentsUrl
@@ -85,6 +78,13 @@ addComments elem =
 type alias PullRequestLabel =
     { name : String
     , color : String
+    }
+
+
+type alias IssuesData =
+    { url : String
+    , number : Int
+    , labels : List PullRequestLabel
     }
 
 
