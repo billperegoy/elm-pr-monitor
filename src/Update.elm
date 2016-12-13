@@ -113,12 +113,6 @@ getPullRequestSubResources pullRequests =
         ++ getAllPullRequestStatusData pullRequests
 
 
-
---
--- Http
---
-
-
 getAllPullRequestData : List (Cmd Msg)
 getAllPullRequestData =
     List.map (\repo -> getPullRequestData repo) Config.repositories
@@ -137,10 +131,6 @@ getPullRequestData repository =
             (Http.get url Github.pullRequestListDecoder)
 
 
-
------
-
-
 getAllPullRequestCommentData : List Model.PullRequestData -> List (Cmd Msg)
 getAllPullRequestCommentData pullRequests =
     List.map
@@ -154,10 +144,6 @@ getPullRequestCommentData url =
         (Http.get url Github.pullRequestCommentListDecoder)
 
 
-
------
-
-
 getAllPullRequestIssuesData : List Model.PullRequestData -> List (Cmd Msg)
 getAllPullRequestIssuesData pullRequests =
     List.map
@@ -169,10 +155,6 @@ getPullRequestIssuesData : String -> Cmd Msg
 getPullRequestIssuesData url =
     Http.send GetPullRequestIssuesData
         (Http.get url Github.issuesDecoder)
-
-
-
------
 
 
 getAllPullRequestStatusData : List Model.PullRequestData -> List (Cmd Msg)
