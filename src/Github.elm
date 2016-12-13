@@ -5,6 +5,7 @@ import Json.Decode
 import Json.Decode.Pipeline
 import String
 import DateTimeUtils
+import Dict
 
 
 type alias StatusData =
@@ -216,3 +217,98 @@ issueUrlToPullRequestId url =
         |> List.drop 9
         |> List.head
         |> Maybe.withDefault "error"
+
+
+type alias PullRequestCollection =
+    Dict.Dict String AugmentedPullRequestData
+
+
+pullRequestKey : AugmentedPullRequestData -> String
+pullRequestKey pullRequest =
+    pullRequest.base.repo.fullName ++ ":" ++ toString pullRequest.number
+
+
+pullRequestListToDict : List AugmentedPullRequestData -> PullRequestCollection
+pullRequestListToDict pullRequests =
+    let
+        zippedList =
+            List.map (\e -> ( pullRequestKey e, e )) pullRequests
+    in
+        Dict.fromList zippedList
+
+
+issueUrlToDictKey : String -> String
+issueUrlToDictKey url =
+    issueUrlToRepository
+        url
+        ++ ":"
+        ++ issueUrlToPullRequestId url
+
+
+addLabels : PullRequestCollection -> IssuesData -> PullRequestCollection
+addLabels pullRequests issue =
+    let
+        key =
+            issueUrlToDictKey issue.url
+
+        pr : Maybe AugmentedPullRequestData
+        pr =
+            Dict.get key pullRequests
+
+        newPr =
+            Maybe.map (\pr -> { pr | labels = issue.labels }) pr
+    in
+        case newPr of
+            Nothing ->
+                pullRequests
+
+            Just a ->
+                Dict.union (Dict.singleton key a) pullRequests
+
+
+addComments : PullRequestCollection -> List PullRequestCommentData -> PullRequestCollection
+addComments pullRequests comments =
+    let
+        key : String
+        key =
+            comments
+                |> List.map (\e -> issueUrlToDictKey e.issueUrl)
+                |> List.head
+                |> Maybe.withDefault "error"
+
+        pr : Maybe AugmentedPullRequestData
+        pr =
+            Dict.get key pullRequests
+
+        extractComments : AugmentedPullRequestData -> List PullRequestCommentData -> AugmentedPullRequestData
+        extractComments pr comments =
+            { pr
+                | comments =
+                    List.filter
+                        (\e ->
+                            (String.contains "👍" e.body)
+                                || (String.contains ":+1" e.body)
+                        )
+                        comments
+            }
+
+        newPr : Maybe AugmentedPullRequestData
+        newPr =
+            Maybe.map (\pull -> extractComments pull comments) pr
+    in
+        case newPr of
+            Nothing ->
+                pullRequests
+
+            Just a ->
+                Dict.union (Dict.singleton key a) pullRequests
+
+
+updatePullRequests : PullRequestCollection -> List PullRequestData -> PullRequestCollection
+updatePullRequests pullRequests newPullRequests =
+    Dict.union
+        (newPullRequests
+            |> List.map (\e -> augmentPullRequestData e)
+            |> pullRequestListToDict
+        )
+        pullRequests

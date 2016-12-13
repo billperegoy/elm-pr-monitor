@@ -44,21 +44,24 @@ repositories =
 --
 
 
+getPullRequestSubResources : List Github.PullRequestData -> List (Cmd Msg)
+getPullRequestSubResources pullRequests =
+    getAllPullRequestCommentData pullRequests
+        ++ getAllPullRequestIssuesData pullRequests
+        ++ getAllPullRequestStatusData pullRequests
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetPullRequestData result ->
             case result of
-                Ok newPullRequests ->
+                Ok pr ->
                     { model
-                        | pullRequests =
-                            updatePullRequests model.pullRequests newPullRequests
+                        | pullRequests = Github.updatePullRequests model.pullRequests pr
                         , errors = Nothing
                     }
-                        ! (getAllPullRequestCommentData newPullRequests
-                            ++ getAllPullRequestIssuesData newPullRequests
-                            ++ getAllPullRequestStatusData newPullRequests
-                          )
+                        ! getPullRequestSubResources pr
 
                 Err error ->
                     { model | errors = Just (toString error) } ! []
@@ -67,7 +70,7 @@ update msg model =
             case result of
                 Ok comments ->
                     { model
-                        | pullRequests = addComments model.pullRequests comments
+                        | pullRequests = Github.addComments model.pullRequests comments
                         , errors = Nothing
                     }
                         ! []
@@ -79,10 +82,7 @@ update msg model =
             case result of
                 Ok issue ->
                     { model
-                        | pullRequests =
-                            addLabels
-                                model.pullRequests
-                                issue
+                        | pullRequests = Github.addLabels model.pullRequests issue
                         , errors = Nothing
                     }
                         ! []
@@ -114,8 +114,7 @@ update msg model =
             { model | currentTime = time } ! []
 
         UpdatePullRequestData _ ->
-            model
-                ! getAllPullRequestData repositories
+            model ! getAllPullRequestData repositories
 
 
 
