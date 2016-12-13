@@ -54,49 +54,41 @@ getPullRequestSubResources pullRequests =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GetPullRequestData result ->
-            case result of
-                Ok pr ->
-                    { model
-                        | pullRequests = Github.updatePullRequests model.pullRequests pr
-                        , errors = Nothing
-                    }
-                        ! getPullRequestSubResources pr
+        GetPullRequestData (Ok pr) ->
+            { model
+                | pullRequests = Github.updatePullRequests model.pullRequests pr
+                , errors = Nothing
+            }
+                ! getPullRequestSubResources pr
 
-                Err error ->
-                    { model | errors = Just (toString error) } ! []
+        GetPullRequestData (Err error) ->
+            { model | errors = Just (toString error) } ! []
 
-        GetPullRequestCommentData result ->
-            case result of
-                Ok comments ->
-                    { model
-                        | pullRequests = Github.addComments model.pullRequests comments
-                        , errors = Nothing
-                    }
-                        ! []
+        GetPullRequestCommentData (Ok comments) ->
+            { model
+                | pullRequests = Github.addComments model.pullRequests comments
+                , errors = Nothing
+            }
+                ! []
 
-                Err error ->
-                    { model | errors = Just (toString error) } ! []
+        GetPullRequestCommentData (Err error) ->
+            { model | errors = Just (toString error) } ! []
 
-        GetPullRequestIssuesData result ->
-            case result of
-                Ok issue ->
-                    { model
-                        | pullRequests = Github.addLabels model.pullRequests issue
-                        , errors = Nothing
-                    }
-                        ! []
+        GetPullRequestIssuesData (Ok issue) ->
+            { model
+                | pullRequests = Github.addLabels model.pullRequests issue
+                , errors = Nothing
+            }
+                ! []
 
-                Err error ->
-                    { model | errors = Just (toString error) } ! []
+        GetPullRequestIssuesData (Err error) ->
+            { model | errors = Just (toString error) } ! []
 
-        GetPullRequestStatusData result ->
-            case result of
-                Ok statuses ->
-                    model ! []
+        GetPullRequestStatusData (Ok statuses) ->
+            model ! []
 
-                Err error ->
-                    { model | errors = Just (toString error) } ! []
+        GetPullRequestStatusData (Err error) ->
+            { model | errors = Just (toString error) } ! []
 
         SetDecayTimeFormValue value ->
             { model | decayTimeFormValue = value } ! []
