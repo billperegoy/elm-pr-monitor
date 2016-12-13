@@ -55,58 +55,106 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetPullRequestData (Ok pr) ->
-            { model
-                | pullRequests = Github.updatePullRequests model.pullRequests pr
-                , errors = Nothing
-            }
-                ! getPullRequestSubResources pr
+            xgetPullRequestData model pr
 
         GetPullRequestData (Err error) ->
-            { model | errors = Just (toString error) } ! []
+            updateError model error
 
         GetPullRequestCommentData (Ok comments) ->
-            { model
-                | pullRequests = Github.addComments model.pullRequests comments
-                , errors = Nothing
-            }
-                ! []
+            xgetPullRequestCommentData model comments
 
         GetPullRequestCommentData (Err error) ->
-            { model | errors = Just (toString error) } ! []
+            updateError model error
 
         GetPullRequestIssuesData (Ok issue) ->
-            { model
-                | pullRequests = Github.addLabels model.pullRequests issue
-                , errors = Nothing
-            }
-                ! []
+            xgetPullRequestIssuesData model issue
 
         GetPullRequestIssuesData (Err error) ->
-            { model | errors = Just (toString error) } ! []
+            updateError model error
 
         GetPullRequestStatusData (Ok statuses) ->
-            model ! []
+            nothing model
 
         GetPullRequestStatusData (Err error) ->
-            { model | errors = Just (toString error) } ! []
+            updateError model error
 
         SetDecayTimeFormValue value ->
-            { model | decayTimeFormValue = value } ! []
+            setDecayTimeFormValue model value
 
         UpdateDecayTime ->
-            { model
-                | decayTimeInDays =
-                    DateTimeUtils.timeStringToFloat
-                        model.decayTimeFormValue
-                        model.decayTimeInDays
-            }
-                ! []
+            updateDecayTime model
 
         EverySecond time ->
-            { model | currentTime = time } ! []
+            everySecond model time
 
         UpdatePullRequestData _ ->
             model ! getAllPullRequestData repositories
+
+
+
+-- FIXME - bad name
+
+
+xgetPullRequestData model pr =
+    { model
+        | pullRequests = Github.updatePullRequests model.pullRequests pr
+        , errors = Nothing
+    }
+        ! getPullRequestSubResources pr
+
+
+
+-- FIXME - bad name
+
+
+xgetPullRequestCommentData model comments =
+    { model
+        | pullRequests = Github.addComments model.pullRequests comments
+        , errors = Nothing
+    }
+        ! []
+
+
+
+-- FIXME - bad name
+
+
+xgetPullRequestIssuesData model issue =
+    { model
+        | pullRequests = Github.addLabels model.pullRequests issue
+        , errors = Nothing
+    }
+        ! []
+
+
+setDecayTimeFormValue model value =
+    { model | decayTimeFormValue = value } ! []
+
+
+nothing : Model -> ( Model, Cmd Msg )
+nothing model =
+    model ! []
+
+
+everySecond : Model -> Time.Time -> ( Model, Cmd Msg )
+everySecond model time =
+    { model | currentTime = time } ! []
+
+
+updateDecayTime : Model -> ( Model, Cmd Msg )
+updateDecayTime model =
+    { model
+        | decayTimeInDays =
+            DateTimeUtils.timeStringToFloat
+                model.decayTimeFormValue
+                model.decayTimeInDays
+    }
+        ! []
+
+
+updateError : Model -> Http.Error -> ( Model, Cmd Msg )
+updateError model error =
+    { model | errors = Just (toString error) } ! []
 
 
 
