@@ -1,8 +1,8 @@
 module Model exposing (..)
 
 import Dict
-import Time
 import Http
+import Time
 
 
 type alias Model =

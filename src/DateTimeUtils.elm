@@ -1,8 +1,8 @@
 module DateTimeUtils exposing (..)
 
-import Time
 import Date
 import String
+import Time
 
 
 dateStringToTime : String -> Time.Time

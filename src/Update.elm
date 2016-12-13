@@ -1,11 +1,15 @@
 module Update exposing (..)
 
-import Model exposing (..)
-import Time
-import DateTimeUtils
 import Http
-import Github
+import Time
+
+
+--
+
 import Config
+import DateTimeUtils
+import Github
+import Model exposing (..)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -45,7 +49,7 @@ update msg model =
             everySecond model time
 
         UpdatePullRequestData _ ->
-            model ! getAllPullRequestData Config.repositories
+            model ! getAllPullRequestData
 
 
 updatePullRequestData model pr =
@@ -115,9 +119,9 @@ getPullRequestSubResources pullRequests =
 --
 
 
-getAllPullRequestData : List String -> List (Cmd Msg)
-getAllPullRequestData repositories =
-    List.map (\repo -> getPullRequestData repo) repositories
+getAllPullRequestData : List (Cmd Msg)
+getAllPullRequestData =
+    List.map (\repo -> getPullRequestData repo) Config.repositories
 
 
 getPullRequestData : String -> Cmd Msg

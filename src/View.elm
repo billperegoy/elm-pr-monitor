@@ -1,13 +1,17 @@
 module View exposing (view)
 
+import Date
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Date
 import Time
-import Dict
-import TimeAgo
+
+
+--
+
 import DateTimeUtils
+import TimeAgo
 import Model exposing (..)
 
 
