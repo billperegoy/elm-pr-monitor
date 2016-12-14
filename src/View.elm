@@ -173,13 +173,38 @@ pullRequestTable model =
             ]
 
 
+zeroExtend : String -> String
+zeroExtend str =
+    if (String.length str == 1) then
+        "0" ++ str
+    else
+        str
+
+
+dateString : Date.Date -> String
+dateString date =
+    toString (Date.month date)
+        ++ " "
+        ++ toString (Date.day date)
+        ++ ", "
+        ++ toString (Date.year date)
+        ++ " -  "
+        ++ (toString (Date.hour date) |> zeroExtend)
+        ++ ":"
+        ++ (toString (Date.minute date) |> zeroExtend)
+        ++ ":"
+        ++ (toString (Date.second date) |> zeroExtend)
+
+
 currentTimeDisplay : Model -> Html Msg
 currentTimeDisplay model =
     let
-        timeString =
-            "Current Time: " ++ toString (Date.fromTime model.currentTime)
+        date =
+            Date.fromTime model.currentTime
     in
-        p [] [ text timeString ]
+        h2 [ style [ ( "margin-bottom", "50px" ) ] ]
+            [ span [ class "label label-primary" ] [ date |> dateString |> text ]
+            ]
 
 
 errors : Model -> Html Msg
@@ -230,8 +255,10 @@ view model =
         , div [ class "container" ]
             [ errors model
             , currentTimeDisplay model
-            , decayDisplay model.decayTimeInDays
-            , decayForm
+              {-
+                 , decayDisplay model.decayTimeInDays
+                 , decayForm
+              -}
             , pullRequestTable model
             ]
         ]
