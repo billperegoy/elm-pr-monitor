@@ -29,7 +29,7 @@ augmentPullRequestData elem =
     , user = elem.user
     , comments = []
     , labels = []
-    , buildStatus = Model.Fail
+    , buildStatus = Model.Pending
     }
 
 

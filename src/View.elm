@@ -15,8 +15,8 @@ import TimeAgo
 import Model exposing (..)
 
 
-elapsedTimeToColor : String -> Time.Time -> Float -> ( String, String )
-elapsedTimeToColor state decayTimeInDays elapsedTime =
+pullRequestColor : Model.AugmentedPullRequestData -> Time.Time -> Float -> ( String, String )
+pullRequestColor pullRequest decayTimeInDays elapsedTime =
     let
         decayTimeInSeconds =
             decayTimeInDays * 24 * 3600
@@ -33,10 +33,28 @@ elapsedTimeToColor state decayTimeInDays elapsedTime =
         lValue =
             truncate (50.0 + (percentLeft / 2))
     in
-        if state == "open" then
-            ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
+        if pullRequest.state == "open" then
+            if readyForMerge pullRequest then
+                ( "background-color", "#65f442" )
+            else
+                ( "background-color", "hsl(0, 100%, " ++ toString lValue ++ "%)" )
         else
             ( "background-color", "#65f442" )
+
+
+readyForMerge : Model.AugmentedPullRequestData -> Bool
+readyForMerge pullRequest =
+    let
+        hasReadyForMergeLabel =
+            ((List.filter (\label -> label.name == "Ready for Merge") pullRequest.labels) |> List.length) > 0
+
+        hasEnoughThumbs =
+            (pullRequest.comments |> List.length) >= 2
+
+        lastBuildPassed =
+            True
+    in
+        hasReadyForMergeLabel && hasEnoughThumbs && lastBuildPassed
 
 
 pullRequestViewElement : Model -> Model.AugmentedPullRequestData -> Html Msg
@@ -57,7 +75,7 @@ pullRequestViewElement model pullRequest =
         tr []
             [ td
                 [ style
-                    [ elapsedTimeToColor pullRequest.state model.decayTimeInDays elapsedTime
+                    [ pullRequestColor pullRequest model.decayTimeInDays elapsedTime
                     ]
                 ]
                 [ text (TimeAgo.timeAgoInWords elapsedTime) ]
