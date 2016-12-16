@@ -235,18 +235,6 @@ errors model =
             div [ class "alert alert-danger" ] [ text a ]
 
 
-decayDisplay : Float -> Html Msg
-decayDisplay decayTimeInDays =
-    div []
-        [ text
-            ("Current decay time (days): "
-                ++ (toString
-                        decayTimeInDays
-                   )
-            )
-        ]
-
-
 view : Model -> Html Msg
 view model =
     div []
