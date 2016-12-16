@@ -8,9 +8,8 @@ import Time
 type alias Model =
     { currentTime : Time.Time
     , pullRequests : PullRequestCollection
-    , decayTimeFormValue : String
-    , decayTimeInDays : Float
     , errors : Maybe String
+    , decayTimeInDays : Float
     }
 
 
@@ -105,9 +104,8 @@ initModel : Model
 initModel =
     { currentTime = 0.0
     , pullRequests = Dict.empty
-    , decayTimeFormValue = ""
-    , decayTimeInDays = 5
     , errors = Nothing
+    , decayTimeInDays = 5
     }
 
 
@@ -116,7 +114,5 @@ type Msg
     | GetPullRequestCommentData (Result Http.Error (List PullRequestCommentData))
     | GetPullRequestIssuesData (Result Http.Error IssuesData)
     | GetPullRequestStatusData (Result Http.Error (List StatusData))
-    | SetDecayTimeFormValue String
-    | UpdateDecayTime
     | EverySecond Float
     | UpdatePullRequestData Float

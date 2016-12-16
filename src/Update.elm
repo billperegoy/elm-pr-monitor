@@ -39,12 +39,6 @@ update msg model =
         GetPullRequestStatusData (Err error) ->
             updateError model error
 
-        SetDecayTimeFormValue value ->
-            setDecayTimeFormValue model value
-
-        UpdateDecayTime ->
-            updateDecayTime model
-
         EverySecond time ->
             everySecond model time
 
@@ -76,10 +70,6 @@ updatePullRequestIssuesData model issue =
         ! []
 
 
-setDecayTimeFormValue model value =
-    { model | decayTimeFormValue = value } ! []
-
-
 nothing : Model -> ( Model, Cmd Msg )
 nothing model =
     model ! []
@@ -88,17 +78,6 @@ nothing model =
 everySecond : Model -> Time.Time -> ( Model, Cmd Msg )
 everySecond model time =
     { model | currentTime = time } ! []
-
-
-updateDecayTime : Model -> ( Model, Cmd Msg )
-updateDecayTime model =
-    { model
-        | decayTimeInDays =
-            DateTimeUtils.timeStringToFloat
-                model.decayTimeFormValue
-                model.decayTimeInDays
-    }
-        ! []
 
 
 updateError : Model -> Http.Error -> ( Model, Cmd Msg )

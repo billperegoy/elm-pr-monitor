@@ -247,25 +247,6 @@ decayDisplay decayTimeInDays =
         ]
 
 
-decayForm : Html Msg
-decayForm =
-    div [ class "form-group", style [ ( "width", "200px" ) ] ]
-        [ label [ for "decayTimeInput" ] [ text "Set Decay Time" ]
-        , input
-            [ class "form-control"
-            , id "decayTimeInput"
-            , onInput SetDecayTimeFormValue
-            ]
-            []
-        , button
-            [ type_ "submit"
-            , class "btn btn-primary"
-            , onClick UpdateDecayTime
-            ]
-            [ text "Submit" ]
-        ]
-
-
 view : Model -> Html Msg
 view model =
     div []
@@ -273,10 +254,6 @@ view model =
         , div [ class "container" ]
             [ errors model
             , currentTimeDisplay model
-              {-
-                 , decayDisplay model.decayTimeInDays
-                 , decayForm
-              -}
             , pullRequestTable model
             ]
         ]

@@ -7,3 +7,8 @@ repositories =
     , "contacts/contacts-listpicker-ui"
     , "ES/ctct"
     ]
+
+
+decayTimeInDays : Float
+decayTimeInDays =
+    5
